@@ -1,8 +1,9 @@
 #!/bin/bash
 # Setup cron job for automated monitoring
 
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-MONITOR_SCRIPT="${SCRIPT_DIR}/monitor.py"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+MONITOR_SCRIPT="${PROJECT_ROOT}/monitor.py"
 
 echo "[*] Setting up cron job for automated monitoring"
 

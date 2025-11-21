@@ -72,8 +72,9 @@ EOF
 
 # Check if Python script exists
 check_dependencies() {
-    local script_dir=$(dirname "$0")
-    local python_script="$script_dir/subdomain_finder.py"
+    local script_dir="$(cd "$(dirname "$0")" && pwd)"
+    local project_root="$(dirname "$script_dir")"
+    local python_script="$project_root/modules/subdomain_finder.py"
 
     if [ ! -f "$python_script" ]; then
         echo -e "${RED}[!] Error: subdomain_finder.py not found${RESET}"
