@@ -1,0 +1,13 @@
+## Python Dependencies for Bug Bounty Monitoring Framework
+
+# Core dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+PyYAML>=6.0.1
+
+# Optional but recommended
+lxml>=4.9.0          # Better HTML parsing
+urllib3>=2.0.0       # HTTP library
+
+# For better performance
+aiohttp>=3.9.0       # Async HTTP (optional)

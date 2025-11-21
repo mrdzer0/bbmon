@@ -1,0 +1,279 @@
+# Bug Bounty Monitoring Framework - Configuration
+# Copy this file to config.yaml and customize for your needs
+
+# ============================================================================
+# TARGET CONFIGURATION
+# ============================================================================
+targets:
+  # Option 1: List domains directly (quick for few targets)
+  domains:
+    - example.com
+    - target.com
+
+  # Option 2: Use file (recommended for multiple targets)
+  domains_file: targets.txt
+
+# ============================================================================
+# MONITORING SETTINGS
+# ============================================================================
+monitoring:
+  # Schedule (cron format) - for reference only
+  # Actual scheduling is done via utils/setup_cron.sh
+  schedule: "0 */6 * * *"  # Every 6 hours
+
+  # Data retention in days
+  retention_days: 30
+
+  # Directory paths (relative to project root)
+  data_dir: ./data
+  baseline_dir: ./data/baseline
+  diff_dir: ./data/diffs
+  reports_dir: ./reports
+
+# ============================================================================
+# CHECKS CONFIGURATION - Enable/disable monitoring features
+# ============================================================================
+checks:
+  # Infrastructure monitoring
+  infrastructure:
+    enabled: true
+    subdomain_discovery: true      # Multi-tool subdomain discovery
+    dns_records: true               # DNS validation with dnsx
+    ssl_certificates: true          # SSL cert monitoring
+    port_scanning: false            # Not implemented yet
+
+  # Web application monitoring
+  web_application:
+    enabled: true
+    http_responses: true            # Status code, title, body length
+    page_content: true              # Content hashing for changes
+    technology_detection: true      # Tech stack identification
+    security_headers: true          # Security header analysis
+    cookies: true                   # Cookie monitoring
+
+  # Content discovery
+  content_discovery:
+    enabled: true
+    javascript_files: true          # JS file analysis
+    api_endpoints: true             # API endpoint extraction
+    forms: true                     # Form detection
+    wayback_urls: false             # Not implemented yet
+
+  # Attack surface monitoring
+  attack_surface:
+    enabled: true
+    parameters: true                # Parameter discovery
+    upload_points: true             # Upload endpoint detection
+    authentication: true            # Auth page detection
+
+# ============================================================================
+# DIFF DETECTION SETTINGS - Change detection rules
+# ============================================================================
+diff_settings:
+  # Ignore dynamic/noisy content
+  ignore_timestamp_changes: true
+  ignore_dynamic_content: true
+
+  # Minimum change threshold (percentage)
+  # Changes below this threshold are ignored
+  min_change_percent: 5  # Ignore if <5% changed
+
+  # Noise filtering (regex patterns to ignore)
+  filter_noise:
+    - "Set-Cookie: session"
+    - "Date:"
+    - "Last-Modified:"
+    - "ETag:"
+    - "_ga="
+    - "csrf_token"
+    - "nonce"
+
+# ============================================================================
+# NOTIFICATION SETTINGS - Multi-platform alerts
+# ============================================================================
+notifications:
+  # Slack notifications
+  slack:
+    enabled: false  # Set to true and add webhook to enable
+    webhook_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+    notify_on:
+      - new_subdomain
+      - new_endpoint
+      - subdomain_takeover
+      - high_value_target
+      - new_vulnerability
+      - technology_change
+      - critical_change
+
+  # Discord notifications
+  discord:
+    enabled: false  # Set to true and add webhook to enable
+    webhook_url: "https://discord.com/api/webhooks/YOUR/WEBHOOK"
+    notify_on:
+      - new_subdomain
+      - new_endpoint
+      - subdomain_takeover
+      - high_value_target
+      - critical_change
+
+  # Telegram notifications
+  telegram:
+    enabled: false  # Set to true and add credentials to enable
+    bot_token: "YOUR_BOT_TOKEN"
+    chat_id: "YOUR_CHAT_ID"
+    notify_on:
+      - new_subdomain
+      - new_endpoint
+      - subdomain_takeover
+      - high_value_target
+      - critical_change
+
+  # Email notifications
+  email:
+    enabled: false  # Set to true and add credentials to enable
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: "your-email@gmail.com"
+    password: "your-app-password"  # Use app-specific password
+    to_email: "your-email@gmail.com"
+
+  # Daily digest (summary of all changes)
+  daily_digest:
+    enabled: true
+    time: "09:00"  # 24-hour format
+    format: "html"  # html or markdown
+
+# ============================================================================
+# PRIORITY CONFIGURATION - Alert prioritization
+# ============================================================================
+priority:
+  # High priority - immediate notification
+  high:
+    - new_subdomain
+    - subdomain_takeover
+    - new_admin_panel
+    - new_upload_endpoint
+    - new_api_endpoint
+    - removed_security_header
+    - new_vulnerability
+    - exposed_sensitive_file
+    - high_value_target
+    - outdated_technology
+
+  # Medium priority - daily digest
+  medium:
+    - technology_change
+    - new_parameter
+    - new_form
+    - status_code_change
+    - content_change
+
+  # Low priority - weekly report
+  low:
+    - minor_update
+    - title_change
+
+# ============================================================================
+# TOOL CONFIGURATION - Settings for external tools
+# ============================================================================
+tools:
+  # Subfinder - Fast subdomain discovery
+  subfinder:
+    enabled: true
+    timeout: 300  # seconds
+
+  # Amass - Comprehensive but slow subdomain enumeration
+  amass:
+    enabled: false  # Disable for quick scans, enable for comprehensive
+    timeout: 900    # Increase for large targets
+    passive: true   # Passive mode only (no active DNS)
+
+  # Assetfinder - Additional subdomain sources
+  assetfinder:
+    enabled: true
+    timeout: 180
+
+  # HTTPx - HTTP probing and tech detection
+  httpx:
+    enabled: true
+    threads: 50     # Parallel threads
+    timeout: 10     # Per-request timeout
+
+  # DNSx - DNS validation
+  dnsx:
+    enabled: true
+    timeout: 5
+    retry: 3
+
+  # Katana - Web crawler
+  katana:
+    enabled: false  # Disable for quick scans
+    depth: 3        # Crawl depth
+    timeout: 300
+
+  # Nuclei - Vulnerability scanner
+  nuclei:
+    enabled: false  # Optional, requires nuclei-templates
+    templates:
+      - exposures
+      - misconfigurations
+      - cves
+    severity:
+      - critical
+      - high
+      - medium
+
+# ============================================================================
+# ADVANCED OPTIONS - Performance tuning
+# ============================================================================
+advanced:
+  # Parallel processing
+  max_workers: 10  # Number of parallel workers
+
+  # Rate limiting (requests per second)
+  rate_limit: 10   # Adjust based on target
+
+  # Screenshots (requires additional dependencies)
+  take_screenshots: false
+  screenshot_new_pages: false
+
+  # Auto-scan new findings with nuclei
+  auto_scan_new_targets: false
+
+  # Data archiving
+  archive_enabled: true
+  archive_after_days: 30
+
+# ============================================================================
+# EXAMPLE CONFIGURATIONS
+# ============================================================================
+
+# For QUICK daily scans:
+# - Set amass.enabled: false
+# - Set katana.enabled: false
+# - Set max_workers: 20
+# - Set min_change_percent: 10
+
+# For COMPREHENSIVE weekly scans:
+# - Set amass.enabled: true
+# - Set katana.enabled: true
+# - Set max_workers: 5
+# - Set min_change_percent: 0
+
+# For SECURITY-FOCUSED monitoring:
+# - Enable only high-priority notifications
+# - Set min_change_percent: 0
+# - Enable nuclei scanning
+
+# ============================================================================
+# ENVIRONMENT VARIABLES (override config)
+# ============================================================================
+# You can use environment variables instead of hardcoding secrets:
+#
+# export BB_SLACK_WEBHOOK="https://hooks.slack.com/..."
+# export BB_DISCORD_WEBHOOK="https://discord.com/api/..."
+# export BB_TELEGRAM_TOKEN="bot_token"
+# export BB_TELEGRAM_CHAT="chat_id"
+# export BB_EMAIL_PASSWORD="app_password"
+#
+# These will override the values in this file

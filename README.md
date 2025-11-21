@@ -1,119 +1,150 @@
-# Bug Bounty Change Monitoring System
+# Bug Bounty Monitoring Framework
 
-A comprehensive monitoring framework for bug bounty hunters to track changes in target infrastructure, web applications, and attack surface over time.
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/yourusername/bb-monitor/graphs/commit-activity)
 
-## Features
+A comprehensive, automated monitoring framework for bug bounty hunters. Track changes in target infrastructure, detect subdomain takeovers, monitor HTTP endpoints, and get instant notifications for high-value findings.
+
+## 🎯 Features
 
 ### Core Capabilities
-- **Infrastructure Monitoring**: Subdomain discovery, port scanning, DNS records, SSL certificates
-- **Web Application Monitoring**: HTTP responses, page content, technology stack, security headers, cookies
-- **Content Discovery**: JavaScript files, API endpoints, forms, parameters
-- **Attack Surface Tracking**: New endpoints, upload functionality, authentication pages
-- **Smart Diff Detection**: Intelligent comparison with noise filtering
-- **Automated Notifications**: Slack, Discord, Telegram, Email
-- **Visual Reports**: HTML reports, terminal dashboard, daily digests
 
-### Key Benefits
-- **Time-Saving**: Automated daily/hourly monitoring instead of manual checks
-- **Clear Visibility**: Know exactly what changed and when
-- **Prioritization**: Focus on high-value changes (new endpoints, new subdomains)
-- **Historical Tracking**: Keep 30-day history of all changes
-- **Actionable Output**: Get notified only about important changes
+- **🔍 Multi-Source Subdomain Discovery**
+  - Integrates 5+ tools (subfinder, assetfinder, crt.sh, chaos, amass)
+  - Parallel execution for maximum speed
+  - Deduplication and validation with dnsx
 
-## Architecture
+- **🚨 Subdomain Takeover Detection**
+  - Checks 20+ cloud services (Vercel, Netlify, GitHub Pages, Heroku, AWS S3, Azure, etc.)
+  - CNAME analysis and HTTP fingerprinting
+  - Confidence scoring (medium/high)
 
-```
-┌─────────────────────────────────────────┐
-│     BASELINE COLLECTION                 │
-│  (Subdomains, Endpoints, JS, Content)   │
-└─────────────────────────────────────────┘
-                 ↓
-┌─────────────────────────────────────────┐
-│        DIFF DETECTION                   │
-│  (Compare current vs baseline)          │
-└─────────────────────────────────────────┘
-                 ↓
-┌─────────────────────────────────────────┐
-│    NOTIFICATIONS & REPORTS              │
-│  (Slack/Discord/Telegram/Email/HTML)    │
-└─────────────────────────────────────────┘
-```
+- **📊 Enhanced HTTP Monitoring**
+  - Tracks: status code, title, body length, technologies, headers
+  - Content hashing for change detection
+  - Smart flagging for high-value targets (admin, login, upload, api, backup)
+  - Detects outdated/vulnerable technologies
 
-## Installation
+- **🔔 Smart Change Detection**
+  - Status code changes (404→200, 403→200)
+  - Title and content changes
+  - Technology stack updates
+  - New security issues
+  - Threshold-based filtering (ignore minor changes)
 
-### Quick Install
+- **📢 Multi-Platform Notifications**
+  - Slack, Discord, Telegram, Email
+  - Configurable triggers
+  - Daily digests and instant alerts
+  - Priority-based routing
+
+- **📈 Visual Reporting**
+  - HTML reports with highlights
+  - Terminal dashboard (simple & interactive)
+  - JSON exports for automation
+  - Historical tracking
+
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
+# Clone repository
+git clone https://github.com/yourusername/bb-monitor.git
 cd bb-monitor
-chmod +x install.sh
-./install.sh
-```
 
-### Manual Installation
+# Run installation script
+chmod +x utils/install.sh
+./utils/install.sh
 
-1. **Install Python dependencies**:
-```bash
-pip3 install pyyaml requests
-```
+# Or install dependencies manually
+pip3 install -r requirements.txt
 
-2. **Install required tools**:
-```bash
-# Subfinder
+# Install Go-based tools
 go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
-
-# httpx
 go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
-
-# Katana
-go install github.com/projectdiscovery/katana/cmd/katana@latest
-
-# Nuclei (optional)
-go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
-
-# dnsx
 go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
-
-# Amass (optional)
-go install -v github.com/owasp-amass/amass/v4/...@master
+go install -v github.com/tomnomnom/assetfinder@latest
 ```
 
-3. **Make scripts executable**:
+### Basic Usage
+
 ```bash
-chmod +x monitor.py dashboard.py setup_cron.sh
+# 1. Add your targets
+echo "hackerone.com" >> targets.txt
+echo "bugcrowd.com" >> targets.txt
+
+# 2. Collect initial baseline
+./monitor.py --init
+
+# 3. Run monitoring
+./monitor.py --monitor
+
+# 4. View dashboard
+./modules/dashboard.py
+
+# 5. Setup automation (optional)
+./utils/setup_cron.sh
 ```
 
-## Configuration
+## 📁 Project Structure
 
-### 1. Edit `config.yaml`
+```
+bb-monitor/
+├── monitor.py              # Main monitoring script
+├── config.yaml            # Configuration file
+├── targets.txt            # Target domains list
+│
+├── modules/               # Core modules
+│   ├── __init__.py
+│   ├── subdomain_finder.py    # Subdomain discovery & takeover detection
+│   ├── http_monitor.py        # HTTP monitoring & flagging
+│   ├── dashboard.py           # Terminal dashboard
+│   └── notifier.py            # Multi-platform notifications
+│
+├── utils/                 # Utility scripts
+│   ├── install.sh             # Installation script
+│   ├── setup_cron.sh          # Cron automation setup
+│   └── subdomain_scan.sh      # Standalone subdomain scanner
+│
+├── docs/                  # Documentation
+│   ├── USAGE.md              # Detailed usage guide
+│   ├── CONFIGURATION.md      # Configuration reference
+│   └── TROUBLESHOOTING.md    # Common issues & solutions
+│
+├── data/                  # Data directory (auto-created)
+│   ├── baseline/             # Baseline snapshots
+│   ├── diffs/                # Change detections
+│   └── subdomain_scans/      # Subdomain scan results
+│
+└── reports/               # Generated reports (auto-created)
+```
+
+## 🔧 Configuration
+
+Edit `config.yaml` to customize:
 
 ```yaml
+# Target configuration
 targets:
-  domains:
-    - example.com
-    - target.com
-  # OR use a file
   domains_file: targets.txt
 
+# Monitoring settings
 monitoring:
   schedule: "0 */6 * * *"  # Every 6 hours
   retention_days: 30
 
+# Enable/disable checks
 checks:
   infrastructure:
-    enabled: true
     subdomain_discovery: true
-    port_scanning: true
-
   web_application:
-    enabled: true
     http_responses: true
-    technology_detection: true
-
   content_discovery:
-    enabled: true
     javascript_files: true
-    api_endpoints: true
 
+# Notifications
 notifications:
   slack:
     enabled: true
@@ -121,315 +152,184 @@ notifications:
     notify_on:
       - new_subdomain
       - new_endpoint
-      - critical_change
+      - subdomain_takeover
+      - high_value_target
 ```
 
-### 2. Add Targets
+## 📖 Usage Examples
 
-Edit `targets.txt`:
-```
-example.com
-target.com
-hackerone-program.com
-```
-
-## Usage
-
-### Initial Baseline Collection
-
-First time setup - collect baseline data:
+### Standalone Subdomain Scanner
 
 ```bash
-./monitor.py --init
+# Basic scan
+./utils/subdomain_scan.sh -d example.com
+
+# Quick scan (subfinder + crt.sh only)
+./utils/subdomain_scan.sh -d example.com -q
+
+# Full scan with all tools
+./utils/subdomain_scan.sh -d example.com -f
+
+# Custom output directory
+./utils/subdomain_scan.sh -d example.com -o /tmp/results
 ```
 
-This will:
-- Discover all subdomains
-- Probe HTTP endpoints
-- Crawl websites
-- Extract JavaScript endpoints
-- Save baseline data
-
-**Time**: 5-15 minutes per domain
-
-### Run Monitoring
-
-Compare current state with baseline:
+### HTTP Monitoring
 
 ```bash
-./monitor.py --monitor
-```
+# Probe URLs from file
+./modules/http_monitor.py -l urls.txt
 
-This will:
-- Collect current data
-- Compare with baseline
-- Detect changes
-- Send notifications
-- Generate reports
-- Update baseline
+# Save snapshot
+./modules/http_monitor.py -l urls.txt -s baseline.json
+
+# Compare changes
+./modules/http_monitor.py -l urls.txt -s current.json -c baseline.json
+```
 
 ### Automated Monitoring
 
-Setup cron job for automatic monitoring:
+```bash
+# Setup cron job (runs every 6 hours)
+./utils/setup_cron.sh
+
+# View logs
+tail -f logs/monitor.log
+
+# View dashboard
+./modules/dashboard.py --interactive
+```
+
+## 🎯 Real-World Example
 
 ```bash
-./setup_cron.sh
-```
+$ ./monitor.py --monitor
 
-Default: Every 6 hours
-
-### View Dashboard
-
-#### Simple Dashboard
-```bash
-./dashboard.py
-```
-
-#### Interactive Dashboard
-```bash
-./dashboard.py --interactive
-```
-
-Press 'q' to quit.
-
-## Output
-
-### Directory Structure
-
-```
-bb-monitor/
-├── config.yaml           # Configuration
-├── targets.txt           # Target domains
-├── monitor.py            # Main monitoring script
-├── dashboard.py          # Dashboard viewer
-├── notifier.py           # Notification module
-├── data/
-│   ├── baseline/         # Baseline snapshots
-│   │   ├── example.com_baseline.json
-│   │   └── target.com_baseline.json
-│   └── diffs/            # Change detections
-│       ├── example.com_20250121_120000.json
-│       └── target.com_20250121_120000.json
-├── reports/              # HTML reports
-│   └── report_20250121_120000.html
-└── logs/                 # Monitoring logs
-    └── monitor.log
-```
-
-### Example Output
-
-```
 ============================================================
-Changes detected for: example.com
+Changes detected for: target.com
 ============================================================
 
 [+] New Subdomains (3):
-  + api.example.com
-  + staging.example.com
-  + beta.example.com
+  + admin-staging.target.com
+  + api-v3.target.com
+  + backup.target.com
 
-[+] New Endpoints (5):
-  + https://api.example.com/v2/users
-  + https://example.com/admin/login
-  + https://staging.example.com/upload
+[!!!] POTENTIAL SUBDOMAIN TAKEOVERS (1):
+  [!] old-app.target.com
+      Service: heroku
+      CNAME: old-app.herokuapp.com
+      Confidence: high
+      Fingerprint: No such app
 
-[+] New JS Endpoints (12):
-  + /api/internal/admin
-  + /api/v2/delete-user
-  + /api/upload-file
+[+] New Endpoints (2):
+  + https://admin-staging.target.com
+  + https://api-v3.target.com/upload
+
+[~] Changed Endpoints (1):
+  ~ https://target.com/dashboard
+    Status: 403 → 200
+    Title: Access Denied → Admin Dashboard
+    Body Length: 1,234 → 15,678 (1170% change)
+    [!] FLAG: High-value target: admin (dashboard in URL)
+    [!] FLAG: Outdated technology: Apache 2.4.49
 ```
 
-### HTML Report
+## 🏆 High-Value Findings
 
-Beautiful HTML reports with:
-- Summary statistics
-- New subdomains with timestamps
-- New endpoints categorized
-- Changed endpoints highlighted
-- Technology changes
-- Direct links to investigate
+The framework automatically flags:
 
-## Notifications
+| Category | Keywords | Priority | What to Test |
+|----------|----------|----------|--------------|
+| **Admin** | admin, administrator, console, dashboard | 🔴 High | Default creds, SQLi, auth bypass |
+| **Upload** | upload, uploader, file, attachment | 🔴 High | File upload bypass, RCE |
+| **Backup** | backup, bak, old, archive, dump | 🔴 High | File download, info disclosure |
+| **Auth** | login, signin, auth, sso, oauth | 🔴 High | Auth bypass, credential stuffing |
+| **API** | api, graphql, rest, endpoint | 🟡 Medium | IDOR, broken auth |
+| **Dev** | dev, staging, test, debug | 🟡 Medium | Debug info, test accounts |
 
-### Slack Integration
+## 🔐 Vulnerability Detection
 
-1. Create Slack webhook: https://api.slack.com/messaging/webhooks
-2. Add to `config.yaml`:
-```yaml
-notifications:
-  slack:
-    enabled: true
-    webhook_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+Automatically detects outdated/vulnerable technologies:
+
+- Apache 2.4.49, 2.4.50 (CVE-2021-41773 - Path Traversal)
+- PHP 7.3, 7.4, 5.6 (End of life, multiple CVEs)
+- WordPress < 6.0
+- jQuery 1.x, 2.x, 3.0-3.2
+- Drupal 7.x, 8.x
+- And more...
+
+## 📊 Performance
+
+- **Subdomain Discovery**: 5-15 min (full scan), 2-3 min (quick scan)
+- **HTTP Probing**: 20-50 URLs/second (parallel)
+- **Change Detection**: <1 minute
+- **Resource Usage**: ~200MB RAM per domain
+
+## 🛠️ Dependencies
+
+### Required
+```bash
+# Python packages
+pip3 install requests beautifulsoup4 pyyaml
+
+# Go tools
+subfinder   # Subdomain discovery
+httpx       # HTTP probing
+dnsx        # DNS validation
 ```
 
-### Discord Integration
-
-1. Create Discord webhook in channel settings
-2. Add to `config.yaml`:
-```yaml
-notifications:
-  discord:
-    enabled: true
-    webhook_url: "https://discord.com/api/webhooks/YOUR/WEBHOOK"
+### Optional
+```bash
+assetfinder # Additional subdomain sources
+amass       # Comprehensive enumeration (slower)
+katana      # Web crawling
+nuclei      # Vulnerability scanning
 ```
 
-### Telegram Integration
+## 📚 Documentation
 
-1. Create bot with @BotFather
-2. Get chat ID from @userinfobot
-3. Add to `config.yaml`:
-```yaml
-notifications:
-  telegram:
-    enabled: true
-    bot_token: "YOUR_BOT_TOKEN"
-    chat_id: "YOUR_CHAT_ID"
-```
+- **[docs/USAGE.md](docs/USAGE.md)** - Detailed usage guide
+- **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)** - Configuration reference
+- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues & solutions
 
-## Advanced Features
+## 🤝 Contributing
 
-### Custom Diff Filters
+Contributions are welcome! Please:
 
-Ignore noise in `config.yaml`:
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-```yaml
-diff_settings:
-  ignore_timestamp_changes: true
-  min_change_percent: 5
-  filter_noise:
-    - "Set-Cookie: session"
-    - "Date:"
-    - "Last-Modified:"
-```
+## 📝 License
 
-### Priority Scoring
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Categorize changes by priority:
+## ⚠️ Disclaimer
 
-```yaml
-priority:
-  high:
-    - new_subdomain
-    - new_admin_panel
-    - new_upload_endpoint
-  medium:
-    - technology_change
-    - new_parameter
-  low:
-    - content_change
-```
+This tool is for authorized security testing only. Always obtain proper permission before testing any targets. The authors are not responsible for any misuse or damage caused by this tool.
 
-### Auto-Scan New Targets
-
-Automatically run Nuclei on new endpoints:
-
-```yaml
-advanced:
-  auto_scan_new_targets: true
-
-tools:
-  nuclei:
-    enabled: true
-    templates:
-      - exposures
-      - misconfigurations
-      - cves
-```
-
-## Tips for Bug Bounty Hunters
-
-### What to Monitor
-
-**High Priority**:
-- New subdomains (often less tested)
-- New admin panels
-- New upload endpoints
-- New API endpoints
-- Technology version changes (new CVEs)
-
-**Medium Priority**:
-- New parameters (IDOR, SQLi tests)
-- New forms (XSS, CSRF)
-- JavaScript changes (new endpoints)
-- Security header changes
-
-**Low Priority**:
-- Content updates
-- Minor UI changes
-- Marketing pages
-
-### Finding Bugs from Changes
-
-1. **New Subdomain**: Test for subdomain takeover, default credentials
-2. **New Upload**: File upload vulnerabilities, path traversal
-3. **New API**: Broken authentication, IDOR, rate limiting
-4. **New JS Endpoints**: Hidden admin functions, debug endpoints
-5. **Technology Change**: Search for CVEs in new version
-6. **Removed Security Header**: XSS, clickjacking opportunities
-
-### Best Practices
-
-1. **Run baseline during low-traffic hours**: Avoid getting blocked
-2. **Monitor multiple times per day**: Catch changes early
-3. **Keep historical data**: Track patterns over time
-4. **Integrate with your workflow**: Use notifications effectively
-5. **Cross-reference with Wayback**: Find removed-then-restored features
-
-## Troubleshooting
-
-### No subdomains found
-- Check if tools are installed: `which subfinder httpx`
-- Try manual test: `subfinder -d example.com`
-- Enable Amass in config for more sources
-
-### Rate limiting
-- Reduce `rate_limit` in config
-- Add delays between requests
-- Use VPN/proxy rotation
-
-### Too many notifications
-- Adjust `notify_on` settings
-- Increase `min_change_percent`
-- Use daily digest instead of instant notifications
-
-### High resource usage
-- Reduce `max_workers`
-- Disable heavy checks (port scanning, deep crawling)
-- Process targets sequentially instead of parallel
-
-## Roadmap
-
-- [ ] Cloud asset monitoring (S3, Azure, GCP)
-- [ ] Screenshot comparison (visual diffs)
-- [ ] Parameter fuzzing on new endpoints
-- [ ] Integration with Burp Suite
-- [ ] API for external integrations
-- [ ] Machine learning for change prioritization
-- [ ] Multi-target correlation
-- [ ] Collaborative monitoring (team features)
-
-## Credits
+## 🙏 Credits
 
 Built with:
-- [Subfinder](https://github.com/projectdiscovery/subfinder) - Subdomain discovery
+- [subfinder](https://github.com/projectdiscovery/subfinder) - Subdomain discovery
 - [httpx](https://github.com/projectdiscovery/httpx) - HTTP probing
-- [Katana](https://github.com/projectdiscovery/katana) - Crawling
-- [Nuclei](https://github.com/projectdiscovery/nuclei) - Vulnerability scanning
+- [dnsx](https://github.com/projectdiscovery/dnsx) - DNS validation
+- [assetfinder](https://github.com/tomnomnom/assetfinder) - Asset discovery
+- [crt.sh](https://crt.sh) - Certificate transparency
+- [chaos](https://chaos.projectdiscovery.io) - Curated dataset
 
-## License
+## 📧 Contact
 
-MIT License - Feel free to use for bug bounty hunting!
+- **Issues**: [GitHub Issues](https://github.com/yourusername/bb-monitor/issues)
+- **Twitter**: [@yourusername](https://twitter.com/yourusername)
+- **Email**: your.email@example.com
 
-## Contributing
+## ⭐ Star History
 
-Pull requests welcome! Areas for improvement:
-- Additional notification platforms
-- Better diff algorithms
-- Performance optimizations
-- New monitoring checks
+If you find this tool useful, please consider giving it a star!
 
 ---
 
 **Happy Hunting!** 🎯
-
-For questions/issues: Create an issue on GitHub

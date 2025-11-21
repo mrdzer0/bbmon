@@ -17,6 +17,19 @@ from typing import Dict, List, Set, Any
 import difflib
 from collections import defaultdict
 
+# Import enhanced modules
+try:
+    from modules.subdomain_finder import SubdomainFinder
+    ENHANCED_SUBDOMAIN = True
+except ImportError:
+    ENHANCED_SUBDOMAIN = False
+
+try:
+    from modules.http_monitor import HTTPMonitor
+    ENHANCED_HTTP = True
+except ImportError:
+    ENHANCED_HTTP = False
+
 class Colors:
     RED = '\033[91m'
     GREEN = '\033[92m'
@@ -94,71 +107,137 @@ class BBMonitor:
         """Generate hash of content"""
         return hashlib.sha256(content.encode()).hexdigest()
 
-    def discover_subdomains(self, domain: str) -> Set[str]:
-        """Discover subdomains using multiple tools"""
+    def discover_subdomains(self, domain: str) -> Dict[str, Any]:
+        """Discover subdomains using multiple tools (enhanced version)"""
         print(f"{Colors.BLUE}[*] Discovering subdomains for {domain}...{Colors.RESET}")
-        subdomains = set()
 
-        # Subfinder
-        if self.config['tools']['subfinder']['enabled']:
-            output = self.run_command(
-                f"subfinder -d {domain} -silent",
-                timeout=self.config['tools']['subfinder']['timeout']
-            )
-            subdomains.update(output.strip().split('\n'))
+        # Use enhanced subdomain finder if available
+        if ENHANCED_SUBDOMAIN:
+            output_dir = Path(self.config['monitoring']['data_dir']) / 'subdomain_scans' / domain
+            output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Amass (passive)
-        if self.config['tools']['amass']['enabled'] and self.config['tools']['amass']['passive']:
-            output = self.run_command(
-                f"amass enum -passive -d {domain}",
-                timeout=self.config['tools']['amass']['timeout']
-            )
-            subdomains.update(output.strip().split('\n'))
+            finder = SubdomainFinder(domain, str(output_dir))
+            results = finder.run_all(check_takeover=True)
 
-        # Remove empty strings
-        subdomains.discard('')
+            print(f"{Colors.GREEN}[+] Found {len(results['subdomains'])} subdomains{Colors.RESET}")
 
-        print(f"{Colors.GREEN}[+] Found {len(subdomains)} subdomains{Colors.RESET}")
-        return subdomains
+            # Return both subdomains and takeover info
+            return {
+                'subdomains': results['subdomains'],
+                'takeovers': results.get('takeovers', []),
+                'dns_results': results.get('dns_results', {}),
+                'by_source': results.get('by_source', {})
+            }
+        else:
+            # Fallback to basic discovery
+            subdomains = set()
+
+            # Subfinder
+            if self.config['tools']['subfinder']['enabled']:
+                output = self.run_command(
+                    f"subfinder -d {domain} -silent",
+                    timeout=self.config['tools']['subfinder']['timeout']
+                )
+                subdomains.update(output.strip().split('\n'))
+
+            # Amass (passive)
+            if self.config['tools']['amass']['enabled'] and self.config['tools']['amass']['passive']:
+                output = self.run_command(
+                    f"amass enum -passive -d {domain}",
+                    timeout=self.config['tools']['amass']['timeout']
+                )
+                subdomains.update(output.strip().split('\n'))
+
+            # Remove empty strings
+            subdomains.discard('')
+
+            print(f"{Colors.GREEN}[+] Found {len(subdomains)} subdomains{Colors.RESET}")
+            return {
+                'subdomains': subdomains,
+                'takeovers': [],
+                'dns_results': {},
+                'by_source': {}
+            }
 
     def probe_http(self, subdomains: Set[str]) -> Dict[str, Any]:
-        """Probe HTTP/HTTPS endpoints"""
+        """Probe HTTP/HTTPS endpoints (enhanced version)"""
         print(f"{Colors.BLUE}[*] Probing HTTP endpoints...{Colors.RESET}")
 
-        # Write subdomains to temp file
-        temp_file = f"/tmp/subs_{self.timestamp}.txt"
-        with open(temp_file, 'w') as f:
-            f.write('\n'.join(subdomains))
+        # Use enhanced HTTP monitor if available
+        if ENHANCED_HTTP:
+            # Prepare URLs (try both http and https)
+            urls = []
+            for subdomain in subdomains:
+                if not subdomain.startswith('http'):
+                    urls.append(f"https://{subdomain}")
+                else:
+                    urls.append(subdomain)
 
-        # Run httpx
-        output = self.run_command(
-            f"httpx -l {temp_file} -silent -json -tech-detect -status-code -title -content-length",
-            timeout=600
-        )
+            # Use HTTPMonitor
+            http_monitor = HTTPMonitor(str(Path(self.config['monitoring']['data_dir']) / 'http_snapshots'))
+            results_dict = http_monitor.probe_multiple(urls, parallel=True)
 
-        # Clean up
-        os.remove(temp_file)
+            # Convert to compatible format
+            results = {}
+            for url, data in results_dict.items():
+                if data.get('reachable'):
+                    results[url] = {
+                        'status_code': data.get('status_code'),
+                        'title': data.get('title'),
+                        'content_length': data.get('body_length'),  # Changed from 'content_length'
+                        'body_length': data.get('body_length'),      # Added for compatibility
+                        'technologies': data.get('technologies', []),
+                        'headers': data.get('headers', {}),
+                        'server': data.get('server', ''),
+                        'content_hash': data.get('content_hash', ''),
+                        'flags': data.get('flags', []),
+                        'redirects': data.get('redirects', [])
+                    }
 
-        # Parse JSON output
-        results = {}
-        for line in output.strip().split('\n'):
-            if line:
-                try:
-                    data = json.loads(line)
-                    url = data.get('url', '')
-                    if url:
-                        results[url] = {
-                            'status_code': data.get('status_code'),
-                            'title': data.get('title'),
-                            'content_length': data.get('content_length'),
-                            'technologies': data.get('tech', []),
-                            'headers': data.get('headers', {}),
-                        }
-                except json.JSONDecodeError:
-                    continue
+            print(f"{Colors.GREEN}[+] Found {len(results)} live endpoints{Colors.RESET}")
 
-        print(f"{Colors.GREEN}[+] Found {len(results)} live endpoints{Colors.RESET}")
-        return results
+            # Print high-value flags
+            high_value_count = sum(1 for r in results.values() for f in r.get('flags', []) if f.get('severity') == 'high')
+            if high_value_count > 0:
+                print(f"{Colors.RED}[!] Found {high_value_count} high-value targets{Colors.RESET}")
+
+            return results
+        else:
+            # Fallback to httpx-based probing
+            # Write subdomains to temp file
+            temp_file = f"/tmp/subs_{self.timestamp}.txt"
+            with open(temp_file, 'w') as f:
+                f.write('\n'.join(subdomains))
+
+            # Run httpx
+            output = self.run_command(
+                f"httpx -l {temp_file} -silent -json -tech-detect -status-code -title -content-length",
+                timeout=600
+            )
+
+            # Clean up
+            os.remove(temp_file)
+
+            # Parse JSON output
+            results = {}
+            for line in output.strip().split('\n'):
+                if line:
+                    try:
+                        data = json.loads(line)
+                        url = data.get('url', '')
+                        if url:
+                            results[url] = {
+                                'status_code': data.get('status_code'),
+                                'title': data.get('title'),
+                                'content_length': data.get('content_length'),
+                                'technologies': data.get('tech', []),
+                                'headers': data.get('headers', {}),
+                            }
+                    except json.JSONDecodeError:
+                        continue
+
+            print(f"{Colors.GREEN}[+] Found {len(results)} live endpoints{Colors.RESET}")
+            return results
 
     def get_page_content(self, url: str) -> str:
         """Get page content using curl"""
@@ -213,13 +292,18 @@ class BBMonitor:
             'subdomains': {},
             'endpoints': {},
             'javascript_files': {},
-            'crawled_urls': {}
+            'crawled_urls': {},
+            'subdomain_takeovers': [],
+            'dns_info': {}
         }
 
-        # 1. Discover subdomains
+        # 1. Discover subdomains (enhanced)
         if self.config['checks']['infrastructure']['subdomain_discovery']:
-            subdomains = self.discover_subdomains(domain)
+            subdomain_results = self.discover_subdomains(domain)
+            subdomains = subdomain_results['subdomains']
             baseline['subdomains'] = {sub: True for sub in subdomains}
+            baseline['subdomain_takeovers'] = subdomain_results.get('takeovers', [])
+            baseline['dns_info'] = subdomain_results.get('dns_results', {})
         else:
             subdomains = {domain}
 
@@ -278,6 +362,8 @@ class BBMonitor:
             'new_js_files': [],
             'changed_js_files': [],
             'new_js_endpoints': [],
+            'new_takeovers': [],
+            'resolved_takeovers': []
         }
 
         # Compare subdomains
@@ -286,20 +372,75 @@ class BBMonitor:
         changes['new_subdomains'] = list(new_subs - old_subs)
         changes['removed_subdomains'] = list(old_subs - new_subs)
 
+        # Compare subdomain takeovers
+        old_takeovers = {t['subdomain']: t for t in old.get('subdomain_takeovers', [])}
+        new_takeovers = {t['subdomain']: t for t in new.get('subdomain_takeovers', [])}
+        changes['new_takeovers'] = [new_takeovers[sub] for sub in set(new_takeovers.keys()) - set(old_takeovers.keys())]
+        changes['resolved_takeovers'] = list(set(old_takeovers.keys()) - set(new_takeovers.keys()))
+
         # Compare endpoints
         old_endpoints = set(old.get('endpoints', {}).keys())
         new_endpoints = set(new.get('endpoints', {}).keys())
         changes['new_endpoints'] = list(new_endpoints - old_endpoints)
         changes['removed_endpoints'] = list(old_endpoints - new_endpoints)
 
-        # Compare endpoint details
+        # Compare endpoint details (enhanced with HTTP monitoring data)
         for endpoint in old_endpoints & new_endpoints:
             old_data = old['endpoints'][endpoint]
             new_data = new['endpoints'][endpoint]
 
-            if old_data != new_data:
+            endpoint_changes = {}
+
+            # Status code change
+            if old_data.get('status_code') != new_data.get('status_code'):
+                endpoint_changes['status_code'] = {
+                    'old': old_data.get('status_code'),
+                    'new': new_data.get('status_code')
+                }
+
+            # Title change
+            if old_data.get('title') != new_data.get('title'):
+                endpoint_changes['title'] = {
+                    'old': old_data.get('title', ''),
+                    'new': new_data.get('title', '')
+                }
+
+            # Body length change (significant = >10%)
+            old_length = old_data.get('body_length', old_data.get('content_length', 0))
+            new_length = new_data.get('body_length', new_data.get('content_length', 0))
+
+            if old_length > 0:
+                length_diff_percent = abs(new_length - old_length) / old_length * 100
+                if length_diff_percent > 10:
+                    endpoint_changes['body_length'] = {
+                        'old': old_length,
+                        'new': new_length,
+                        'diff_percent': round(length_diff_percent, 2)
+                    }
+
+            # Technology changes
+            old_tech = set(old_data.get('technologies', []))
+            new_tech = set(new_data.get('technologies', []))
+
+            added_tech = new_tech - old_tech
+            removed_tech = old_tech - new_tech
+
+            if added_tech or removed_tech:
+                endpoint_changes['technologies'] = {
+                    'added': list(added_tech),
+                    'removed': list(removed_tech)
+                }
+
+            # New high-value flags
+            if 'flags' in new_data:
+                high_flags = [f for f in new_data['flags'] if f.get('severity') == 'high']
+                if high_flags:
+                    endpoint_changes['new_flags'] = high_flags
+
+            if endpoint_changes:
                 changes['changed_endpoints'].append({
                     'url': endpoint,
+                    'changes': endpoint_changes,
                     'old': old_data,
                     'new': new_data
                 })
@@ -354,15 +495,45 @@ class BBMonitor:
             for ep in changes['new_endpoints']:
                 print(f"  {Colors.GREEN}+ {ep}{Colors.RESET}")
 
-        # Changed endpoints
+        # Changed endpoints (enhanced display)
         if changes['changed_endpoints']:
             has_changes = True
             print(f"\n{Colors.YELLOW}[~] Changed Endpoints ({len(changes['changed_endpoints'])})::{Colors.RESET}")
             for item in changes['changed_endpoints']:
                 print(f"  {Colors.YELLOW}~ {item['url']}{Colors.RESET}")
-                print(f"    Status: {item['old']['status_code']} -> {item['new']['status_code']}")
-                if item['old'].get('title') != item['new'].get('title'):
-                    print(f"    Title: {item['old'].get('title')} -> {item['new'].get('title')}")
+
+                # Display changes
+                endpoint_changes = item.get('changes', {})
+
+                # Status code
+                if 'status_code' in endpoint_changes:
+                    sc = endpoint_changes['status_code']
+                    print(f"    Status: {sc['old']} → {sc['new']}")
+
+                # Title
+                if 'title' in endpoint_changes:
+                    tc = endpoint_changes['title']
+                    old_title = tc['old'][:50] if tc['old'] else 'None'
+                    new_title = tc['new'][:50] if tc['new'] else 'None'
+                    print(f"    Title: {old_title} → {new_title}")
+
+                # Body length
+                if 'body_length' in endpoint_changes:
+                    bl = endpoint_changes['body_length']
+                    print(f"    Body Length: {bl['old']} → {bl['new']} ({bl['diff_percent']}% change)")
+
+                # Technologies
+                if 'technologies' in endpoint_changes:
+                    tc = endpoint_changes['technologies']
+                    if tc['added']:
+                        print(f"    Tech Added: {', '.join(tc['added'])}")
+                    if tc['removed']:
+                        print(f"    Tech Removed: {', '.join(tc['removed'])}")
+
+                # High-value flags
+                if 'new_flags' in endpoint_changes:
+                    for flag in endpoint_changes['new_flags']:
+                        print(f"    {Colors.RED}[!] FLAG: {flag.get('message')}{Colors.RESET}")
 
         # New JS files
         if changes['new_js_files']:
@@ -377,6 +548,25 @@ class BBMonitor:
             print(f"\n{Colors.MAGENTA}[+] New Endpoints from JS ({len(changes['new_js_endpoints'])})::{Colors.RESET}")
             for ep in changes['new_js_endpoints']:
                 print(f"  {Colors.MAGENTA}+ {ep}{Colors.RESET}")
+
+        # New subdomain takeovers (CRITICAL!)
+        if changes['new_takeovers']:
+            has_changes = True
+            print(f"\n{Colors.RED}{Colors.BOLD}[!!!] POTENTIAL SUBDOMAIN TAKEOVERS ({len(changes['new_takeovers'])})::{Colors.RESET}")
+            for takeover in changes['new_takeovers']:
+                print(f"  {Colors.RED}[!] {takeover['subdomain']}{Colors.RESET}")
+                print(f"      Service: {takeover['service']}")
+                print(f"      CNAME: {takeover['cname']}")
+                print(f"      Confidence: {takeover['confidence']}")
+                if 'fingerprint' in takeover:
+                    print(f"      Fingerprint: {takeover['fingerprint']}")
+
+        # Resolved takeovers
+        if changes['resolved_takeovers']:
+            has_changes = True
+            print(f"\n{Colors.GREEN}[+] Resolved Takeovers ({len(changes['resolved_takeovers'])})::{Colors.RESET}")
+            for sub in changes['resolved_takeovers']:
+                print(f"  {Colors.GREEN}+ {sub}{Colors.RESET}")
 
         if not has_changes:
             print(f"{Colors.BLUE}[*] No significant changes detected{Colors.RESET}")
