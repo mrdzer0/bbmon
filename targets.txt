@@ -1,0 +1,7 @@
+# Bug Bounty Targets
+# Add one domain per line
+
+# Example:
+# example.com
+# target.com
+# bugcrowd-target.com

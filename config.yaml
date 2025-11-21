@@ -1,0 +1,201 @@
+# Bug Bounty Monitoring Configuration
+
+# Target Configuration
+targets:
+  # Option 1: List of domains
+  domains:
+    - example.com
+    - target.com
+
+  # Option 2: File with list of domains (one per line)
+  domains_file: targets.txt
+
+# Monitoring Settings
+monitoring:
+  # How often to run checks (cron format)
+  schedule: "0 */6 * * *"  # Every 6 hours
+
+  # Data retention (days)
+  retention_days: 30
+
+  # Working directory
+  data_dir: ./data
+  baseline_dir: ./data/baseline
+  diff_dir: ./data/diffs
+  reports_dir: ./reports
+
+# What to Monitor
+checks:
+  infrastructure:
+    enabled: true
+    subdomain_discovery: true
+    port_scanning: true
+    dns_records: true
+    ssl_certificates: true
+
+  web_application:
+    enabled: true
+    http_responses: true
+    page_content: true
+    technology_detection: true
+    security_headers: true
+    cookies: true
+
+  content_discovery:
+    enabled: true
+    javascript_files: true
+    api_endpoints: true
+    forms: true
+    wayback_urls: true
+
+  attack_surface:
+    enabled: true
+    parameters: true
+    upload_points: true
+    authentication: true
+
+# Diff Detection
+diff_settings:
+  # Ignore minor changes
+  ignore_timestamp_changes: true
+  ignore_dynamic_content: true  # ads, counters, etc.
+
+  # Minimum change threshold
+  min_change_percent: 5  # Ignore if <5% of content changed
+
+  # Smart filtering
+  filter_noise:
+    - "Set-Cookie: session"
+    - "Date:"
+    - "Last-Modified:"
+    - "ETag:"
+
+# Notification Settings
+notifications:
+  # Slack
+  slack:
+    enabled: false
+    webhook_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+    notify_on:
+      - new_subdomain
+      - new_endpoint
+      - new_vulnerability
+      - technology_change
+      - critical_change
+
+  # Discord
+  discord:
+    enabled: false
+    webhook_url: "https://discord.com/api/webhooks/YOUR/WEBHOOK"
+    notify_on:
+      - new_subdomain
+      - new_endpoint
+      - critical_change
+
+  # Telegram
+  telegram:
+    enabled: false
+    bot_token: "YOUR_BOT_TOKEN"
+    chat_id: "YOUR_CHAT_ID"
+    notify_on:
+      - new_subdomain
+      - new_endpoint
+      - critical_change
+
+  # Email
+  email:
+    enabled: false
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: "your-email@gmail.com"
+    password: "your-app-password"
+    to_email: "your-email@gmail.com"
+
+  # Daily digest
+  daily_digest:
+    enabled: true
+    time: "09:00"  # Send at 9 AM
+    format: "html"  # html or markdown
+
+# Priority Scoring
+priority:
+  # High priority changes (immediate notification)
+  high:
+    - new_subdomain
+    - new_admin_panel
+    - new_upload_endpoint
+    - new_api_endpoint
+    - removed_security_header
+    - new_vulnerability
+    - exposed_sensitive_file
+
+  # Medium priority (daily digest)
+  medium:
+    - technology_change
+    - new_parameter
+    - new_form
+    - port_change
+
+  # Low priority (weekly report)
+  low:
+    - content_change
+    - minor_update
+
+# Tool Configuration
+tools:
+  # Subdomain discovery
+  subfinder:
+    enabled: true
+    timeout: 300
+
+  amass:
+    enabled: true
+    timeout: 600
+    passive: true
+
+  # HTTP probing
+  httpx:
+    enabled: true
+    threads: 50
+    timeout: 10
+
+  # Content discovery
+  katana:
+    enabled: true
+    depth: 3
+    timeout: 300
+
+  # JS analysis
+  linkfinder:
+    enabled: true
+
+  # Nuclei scanning
+  nuclei:
+    enabled: true
+    templates:
+      - exposures
+      - misconfigurations
+      - cves
+    severity:
+      - critical
+      - high
+      - medium
+
+# Advanced Options
+advanced:
+  # Parallel processing
+  max_workers: 10
+
+  # Rate limiting (requests per second)
+  rate_limit: 10
+
+  # Screenshots
+  take_screenshots: true
+  screenshot_new_pages: true
+
+  # Auto-scan new findings
+  auto_scan_new_targets: true
+
+  # Archive old data
+  archive_enabled: true
+  archive_after_days: 30
