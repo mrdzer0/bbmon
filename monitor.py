@@ -4,6 +4,9 @@ Bug Bounty Change Monitoring System
 Tracks changes in target infrastructure, web apps, and attack surface
 """
 
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 import os
 import sys
 import json
