@@ -47,6 +47,16 @@ class BBMonitor:
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.changes = defaultdict(list)
 
+    def _json_safe(self, data: Any) -> Any:
+        """Recursively convert sets and other non-JSON types to JSON-safe types."""
+        if isinstance(data, dict):
+            return {str(k): self._json_safe(v) for k, v in data.items()}
+        elif isinstance(data, (set, list, tuple)):
+            return [self._json_safe(v) for v in data]
+        else:
+            # tipe primitif (str, int, float, bool, None) langsung balikin
+            return data
+
     def load_config(self, config_path: str) -> Dict:
         """Load configuration from YAML file"""
         try:
@@ -333,11 +343,11 @@ class BBMonitor:
     def save_baseline(self, domain: str, baseline: Dict[str, Any]):
         """Save baseline data to file"""
         baseline_file = Path(self.config['monitoring']['baseline_dir']) / f"{domain}_baseline.json"
-
+        safe_baseline = self._json_safe(baseline)
         with open(baseline_file, 'w') as f:
-            json.dump(baseline, f, indent=2)
-
+            json.dump(safe_baseline, f, indent=2)
         print(f"{Colors.GREEN}[+] Baseline saved: {baseline_file}{Colors.RESET}")
+
 
     def load_baseline(self, domain: str) -> Dict[str, Any]:
         """Load baseline data from file"""
@@ -576,11 +586,11 @@ class BBMonitor:
     def save_changes(self, domain: str, changes: Dict[str, Any]):
         """Save changes to file"""
         diff_file = Path(self.config['monitoring']['diff_dir']) / f"{domain}_{self.timestamp}.json"
-
+        safe_changes = self._json_safe(changes)
         with open(diff_file, 'w') as f:
-            json.dump(changes, f, indent=2)
-
+            json.dump(safe_changes, f, indent=2)
         print(f"{Colors.GREEN}[+] Changes saved: {diff_file}{Colors.RESET}")
+
 
     def generate_report(self, all_changes: Dict[str, Dict[str, Any]]):
         """Generate HTML report"""
