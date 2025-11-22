@@ -97,6 +97,7 @@ notifications:
     enabled: false  # Set to true and add webhook to enable
     webhook_url: "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
     notify_on:
+      - baseline_complete      # Baseline scan summary
       - new_subdomain
       - new_endpoint
       - subdomain_takeover
@@ -111,6 +112,7 @@ notifications:
     enabled: false  # Set to true and add webhook to enable
     webhook_url: "https://discord.com/api/webhooks/YOUR/WEBHOOK"
     notify_on:
+      - baseline_complete      # Baseline scan summary
       - new_subdomain
       - new_endpoint
       - subdomain_takeover
@@ -123,6 +125,7 @@ notifications:
     bot_token: "YOUR_BOT_TOKEN"
     chat_id: "YOUR_CHAT_ID"
     notify_on:
+      - baseline_complete      # Baseline scan summary
       - new_subdomain
       - new_endpoint
       - subdomain_takeover
@@ -137,6 +140,11 @@ notifications:
     username: "your-email@gmail.com"
     password: "your-app-password"  # Use app-specific password
     to_email: "your-email@gmail.com"
+    notify_on:
+      - baseline_complete      # Baseline scan summary
+      - subdomain_takeover
+      - high_value_target
+      - critical_change
 
   # Daily digest (summary of all changes)
   daily_digest:
@@ -237,8 +245,8 @@ tools:
     scan_on:
       - new_subdomain      # Scan newly discovered subdomains
       - baseline_init      # Scan during initial baseline
-    lookup_ips: true       # Lookup resolved IPs
-    dns_resolve: true      # Use Shodan DNS for resolution
+    lookup_ips: true       # Lookup resolved IPs with Shodan
+    dns_resolve: true      # Resolve subdomains to IPs (uses standard DNS)
 
   # Wayback Machine - Historical URL discovery
   wayback:

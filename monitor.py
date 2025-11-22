@@ -540,6 +540,14 @@ class BBMonitor:
             json.dump(safe_baseline, f, indent=2)
         print(f"{Colors.GREEN}[+] Baseline saved: {baseline_file}{Colors.RESET}")
 
+        # Send baseline completion alert
+        try:
+            from modules.notifier import Notifier
+            notifier = Notifier(self.config.get('notifications', {}))
+            notifier.send_baseline_alert(domain, baseline)
+        except Exception as e:
+            print(f"{Colors.YELLOW}[!] Baseline alert error: {e}{Colors.RESET}")
+
 
     def load_baseline(self, domain: str) -> Dict[str, Any]:
         """Load baseline data from file"""
