@@ -206,7 +206,8 @@ class ShodanScanner:
 
     def dns_lookup(self, hostnames: List[str]) -> Dict[str, str]:
         """
-        Resolve hostnames to IP addresses using Shodan DNS
+        Resolve hostnames to IP addresses using standard DNS
+        (Shodan API doesn't provide DNS resolution, using socket instead)
 
         Args:
             hostnames: List of hostnames to resolve
@@ -214,22 +215,33 @@ class ShodanScanner:
         Returns:
             Dictionary mapping hostnames to IPs
         """
-        try:
-            logger.info(f"Shodan DNS lookup for {len(hostnames)} hostnames")
-            results = self.api.dns.resolve(hostnames)
+        import socket
+        results = {}
 
-            # Rate limiting
-            time.sleep(self.rate_limit_delay)
+        logger.info(f"DNS lookup for {len(hostnames)} hostnames")
 
-            return results
+        for hostname in hostnames:
+            try:
+                # Use standard DNS resolution
+                ip = socket.gethostbyname(hostname)
+                results[hostname] = ip
 
-        except shodan.APIError as e:
-            logger.error(f"Shodan DNS error: {e}")
-            return {}
+                # Rate limiting to avoid overwhelming DNS
+                time.sleep(0.1)
+
+            except (socket.gaierror, socket.herror, socket.timeout):
+                # Hostname doesn't resolve
+                logger.debug(f"Failed to resolve: {hostname}")
+                continue
+            except Exception as e:
+                logger.debug(f"DNS error for {hostname}: {e}")
+                continue
+
+        return results
 
     def dns_reverse(self, ips: List[str]) -> Dict[str, List[str]]:
         """
-        Reverse DNS lookup for IP addresses
+        Reverse DNS lookup for IP addresses using standard DNS
 
         Args:
             ips: List of IP addresses
@@ -237,18 +249,29 @@ class ShodanScanner:
         Returns:
             Dictionary mapping IPs to hostnames
         """
-        try:
-            logger.info(f"Shodan reverse DNS for {len(ips)} IPs")
-            results = self.api.dns.reverse(ips)
+        import socket
+        results = {}
 
-            # Rate limiting
-            time.sleep(self.rate_limit_delay)
+        logger.info(f"Reverse DNS for {len(ips)} IPs")
 
-            return results
+        for ip in ips:
+            try:
+                # Use standard reverse DNS
+                hostnames = socket.gethostbyaddr(ip)
+                results[ip] = [hostnames[0]] if hostnames else []
 
-        except shodan.APIError as e:
-            logger.error(f"Shodan reverse DNS error: {e}")
-            return {}
+                # Rate limiting
+                time.sleep(0.1)
+
+            except (socket.gaierror, socket.herror, socket.timeout):
+                # IP doesn't have reverse DNS
+                logger.debug(f"No reverse DNS for: {ip}")
+                results[ip] = []
+            except Exception as e:
+                logger.debug(f"Reverse DNS error for {ip}: {e}")
+                results[ip] = []
+
+        return results
 
     def scan_subdomains(self, subdomains: List[str]) -> Dict:
         """
