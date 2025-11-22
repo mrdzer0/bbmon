@@ -6,6 +6,7 @@ Shows comprehensive data: subdomains, endpoints, technologies, Shodan, Wayback r
 
 import json
 import os
+import yaml
 from pathlib import Path
 from datetime import datetime, timedelta
 from collections import defaultdict, Counter
@@ -750,18 +751,43 @@ class Dashboard:
 
         print()
 
+def load_config(config_path):
+    """Load configuration from YAML file"""
+    try:
+        with open(config_path, 'r') as f:
+            return yaml.safe_load(f)
+    except Exception as e:
+        print(f"Error loading config: {e}")
+        return {}
+
 def main():
     parser = argparse.ArgumentParser(description='Enhanced Bug Bounty Monitoring Dashboard')
+    parser.add_argument('-c', '--config', help='Config file path (e.g., config.program-a.yaml)')
     parser.add_argument('-d', '--domain', help='Filter by specific domain')
     parser.add_argument('-v', '--view',
                        choices=['overview', 'subdomains', 'endpoints', 'technologies', 'security', 'shodan', 'wayback', 'all'],
                        default='overview',
                        help='Dashboard view to display')
-    parser.add_argument('--data-dir', default='./data', help='Data directory path')
+    parser.add_argument('--data-dir', help='Data directory path (overrides config)')
 
     args = parser.parse_args()
 
-    dashboard = Dashboard(data_dir=args.data_dir)
+    # Determine data directory
+    data_dir = './data'  # Default
+
+    if args.config:
+        # Load data_dir from config file
+        config = load_config(args.config)
+        if config:
+            data_dir = config.get('monitoring', {}).get('data_dir', './data')
+            print(f"[*] Using config: {args.config}")
+            print(f"[*] Data directory: {data_dir}\n")
+
+    # Override with --data-dir if specified
+    if args.data_dir:
+        data_dir = args.data_dir
+
+    dashboard = Dashboard(data_dir=data_dir)
     dashboard.render_simple(domain=args.domain, view=args.view)
 
 if __name__ == "__main__":

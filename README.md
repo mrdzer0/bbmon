@@ -106,6 +106,38 @@ echo "bugcrowd.com" >> targets.txt
 ./utils/setup_cron.sh
 ```
 
+### Multi-Program Monitoring
+
+Monitor multiple bug bounty programs with separate configurations:
+
+```bash
+# Create program-specific configs
+cp config.yaml.example config.program-a.yaml
+cp config.yaml.example config.program-b.yaml
+
+# Edit configs (set different data_dir and notifications)
+vim config.program-a.yaml
+vim config.program-b.yaml
+
+# Create target files
+echo "example.com" > targets.program-a.txt
+echo "company.com" > targets.program-b.txt
+
+# Initialize each program
+./monitor.py -c config.program-a.yaml --init
+./monitor.py -c config.program-b.yaml --init
+
+# View program-specific dashboards
+python3 modules/dashboard.py -c config.program-a.yaml
+python3 modules/dashboard.py -c config.program-b.yaml
+
+# Or use the helper script
+./utils/view_program.sh program-a
+./utils/view_program.sh program-b security
+```
+
+**See [QUICK_START_MULTI_PROGRAM.md](QUICK_START_MULTI_PROGRAM.md) for complete guide.**
+
 ## 📁 Project Structure
 
 ```
@@ -126,6 +158,7 @@ bb-monitor/
 ├── utils/                 # Utility scripts
 │   ├── install.sh             # Installation script
 │   ├── setup_cron.sh          # Cron automation setup
+│   ├── view_program.sh        # Quick dashboard viewer for programs
 │   └── subdomain_scan.sh      # Standalone subdomain scanner
 │
 ├── docs/                  # Documentation
