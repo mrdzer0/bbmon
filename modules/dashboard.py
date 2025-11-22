@@ -14,10 +14,11 @@ import curses
 import argparse
 
 class Dashboard:
-    def __init__(self, data_dir="./data", diff_dir="./data/diffs", baseline_dir="./data/baseline"):
+    def __init__(self, data_dir="./data", diff_dir=None, baseline_dir=None):
         self.data_dir = Path(data_dir)
-        self.diff_dir = Path(diff_dir)
-        self.baseline_dir = Path(baseline_dir)
+        # If diff_dir and baseline_dir not specified, derive from data_dir
+        self.diff_dir = Path(diff_dir) if diff_dir else self.data_dir / "diffs"
+        self.baseline_dir = Path(baseline_dir) if baseline_dir else self.data_dir / "baseline"
         self.shodan_dir = self.data_dir / "shodan_scans"
         self.wayback_dir = self.data_dir / "wayback_scans"
 
@@ -772,22 +773,34 @@ def main():
 
     args = parser.parse_args()
 
-    # Determine data directory
+    # Determine data directories
     data_dir = './data'  # Default
+    baseline_dir = None
+    diff_dir = None
 
     if args.config:
-        # Load data_dir from config file
+        # Load directories from config file
         config = load_config(args.config)
         if config:
-            data_dir = config.get('monitoring', {}).get('data_dir', './data')
+            monitoring = config.get('monitoring', {})
+            data_dir = monitoring.get('data_dir', './data')
+            baseline_dir = monitoring.get('baseline_dir')
+            diff_dir = monitoring.get('diff_dir')
             print(f"[*] Using config: {args.config}")
-            print(f"[*] Data directory: {data_dir}\n")
+            print(f"[*] Data directory: {data_dir}")
+            if baseline_dir:
+                print(f"[*] Baseline directory: {baseline_dir}")
+            if diff_dir:
+                print(f"[*] Diff directory: {diff_dir}")
+            print()
 
     # Override with --data-dir if specified
     if args.data_dir:
         data_dir = args.data_dir
+        baseline_dir = None  # Reset to auto-derive
+        diff_dir = None
 
-    dashboard = Dashboard(data_dir=data_dir)
+    dashboard = Dashboard(data_dir=data_dir, baseline_dir=baseline_dir, diff_dir=diff_dir)
     dashboard.render_simple(domain=args.domain, view=args.view)
 
 if __name__ == "__main__":
