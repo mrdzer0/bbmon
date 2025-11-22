@@ -26,6 +26,24 @@ A comprehensive, automated monitoring framework for bug bounty hunters. Track ch
   - Smart flagging for high-value targets (admin, login, upload, api, backup)
   - Detects outdated/vulnerable technologies
 
+- **🌐 Shodan Integration**
+  - Internet-wide asset intelligence
+  - Open port and service detection
+  - Vulnerability identification (CVEs)
+  - Exposed database and remote access detection
+  - DNS resolution and reverse DNS lookup
+  - Organization and ISP information
+
+- **📜 Wayback Machine Integration**
+  - Historical URL discovery from archive.org
+  - Automatic file type classification (10+ categories)
+  - Backup file detection (.bak, .old, .sql)
+  - Configuration file discovery (.env, .yml, .config)
+  - Credential file detection (keys, certificates)
+  - Version control exposure (.git, .svn)
+  - Priority-based scoring system
+  - No API key required
+
 - **🔔 Smart Change Detection**
   - Status code changes (404→200, 403→200)
   - Title and content changes
@@ -100,6 +118,8 @@ bb-monitor/
 │   ├── __init__.py
 │   ├── subdomain_finder.py    # Subdomain discovery & takeover detection
 │   ├── http_monitor.py        # HTTP monitoring & flagging
+│   ├── shodan_scanner.py      # Shodan API integration
+│   ├── wayback_analyzer.py    # Wayback Machine URL discovery
 │   ├── dashboard.py           # Terminal dashboard
 │   └── notifier.py            # Multi-platform notifications
 │
@@ -116,7 +136,9 @@ bb-monitor/
 ├── data/                  # Data directory (auto-created)
 │   ├── baseline/             # Baseline snapshots
 │   ├── diffs/                # Change detections
-│   └── subdomain_scans/      # Subdomain scan results
+│   ├── subdomain_scans/      # Subdomain scan results
+│   ├── shodan_scans/         # Shodan scan results
+│   └── wayback_scans/        # Wayback Machine results
 │
 └── reports/               # Generated reports (auto-created)
 ```
@@ -154,6 +176,34 @@ notifications:
       - new_endpoint
       - subdomain_takeover
       - high_value_target
+
+# Shodan integration (optional)
+tools:
+  shodan:
+    enabled: true
+    api_key: "YOUR_SHODAN_API_KEY"  # Get from https://account.shodan.io/
+    scan_on:
+      - new_subdomain
+      - baseline_init
+
+  # Wayback Machine (no API key needed)
+  wayback:
+    enabled: true
+    max_results: 10000
+    scan_on:
+      - baseline_init
+      - new_subdomain
+    export_categories:
+      - backup
+      - database
+      - config
+      - credentials
+```
+
+**Environment Variables** (recommended for secrets):
+```bash
+export BB_SLACK_WEBHOOK="https://hooks.slack.com/..."
+export BB_SHODAN_API_KEY="your_shodan_api_key"
 ```
 
 ## 📖 Usage Examples
@@ -185,6 +235,35 @@ notifications:
 
 # Compare changes
 ./modules/http_monitor.py -l urls.txt -s current.json -c baseline.json
+```
+
+### Shodan Scanning
+
+```bash
+# Standalone Shodan scan
+python3 modules/shodan_scanner.py YOUR_API_KEY example.com
+
+# Lookup specific IP
+python3 modules/shodan_scanner.py YOUR_API_KEY 8.8.8.8
+
+# Shodan runs automatically when enabled in config
+./monitor.py --init  # Scans during baseline collection
+```
+
+### Wayback Machine Analysis
+
+```bash
+# Standalone Wayback scan
+python3 modules/wayback_analyzer.py example.com
+
+# Save results
+python3 modules/wayback_analyzer.py example.com -o results.json
+
+# Export specific category (backup, database, config, etc.)
+python3 modules/wayback_analyzer.py example.com -c backup
+
+# Wayback runs automatically when enabled in config
+./monitor.py --init  # Includes Wayback analysis
 ```
 
 ### Automated Monitoring
@@ -288,9 +367,23 @@ nuclei      # Vulnerability scanning
 
 ## 📚 Documentation
 
-- **[docs/USAGE.md](docs/USAGE.md)** - Detailed usage guide
-- **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)** - Configuration reference
-- **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Common issues & solutions
+**→ [Complete Documentation Index](docs/README.md)** - Start here for organized documentation
+
+### 🚀 Quick Links
+
+- **[Getting Started](docs/01_Getting_Started/)** - Installation, basic usage, project structure
+- **[Tutorials](docs/02_Tutorials/)** - Multi-program monitoring with examples
+- **[Guides](docs/03_Guides/)** - Shodan integration and advanced features
+- **[Reference](docs/04_Reference/)** - Complete configuration and technical docs
+- **[Troubleshooting](docs/05_Troubleshooting/)** - Solutions to common problems
+
+### 📖 Popular Guides
+
+- [Quick Start Guide](docs/01_Getting_Started/USAGE.md) - Get running in 5 minutes
+- [Multi-Program Setup](docs/02_Tutorials/MULTI_PROGRAM_SETUP.md) - Monitor HackerOne, Bugcrowd, etc.
+- [Shodan Integration](docs/03_Guides/SHODAN_INTEGRATION.md) - Add vulnerability intelligence
+- [Wayback Integration](docs/03_Guides/WAYBACK_INTEGRATION.md) - Discover historical URLs
+- [Configuration Reference](docs/04_Reference/CONFIGURATION.md) - All config options
 
 ## 🤝 Contributing
 
@@ -322,9 +415,9 @@ Built with:
 
 ## 📧 Contact
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/bb-monitor/issues)
-- **Twitter**: [@yourusername](https://twitter.com/yourusername)
-- **Email**: your.email@example.com
+- **Issues**: [GitHub Issues](https://github.com/mrdzer0/bb-monitor/issues)
+- **Twitter**: [@yourusername](https://twitter.com/Daud_aldi)
+- **Email**: me@daudaldi.my.id
 
 ## ⭐ Star History
 

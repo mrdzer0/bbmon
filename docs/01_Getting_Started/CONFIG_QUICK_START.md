@@ -53,6 +53,27 @@ Setup:
 2. Get bot token
 3. Message @userinfobot: Get your chat ID
 
+### 5. Add Shodan Integration
+
+Edit `config.yaml`:
+
+```yaml
+tools:
+  shodan:
+    enabled: true
+    api_key: "YOUR_SHODAN_API_KEY"
+    scan_on:
+      - baseline_init
+      - new_subdomain
+```
+
+Get API key: [https://account.shodan.io/](https://account.shodan.io/)
+
+Or use environment variable:
+```bash
+export BB_SHODAN_API_KEY="your_api_key"
+```
+
 ## Configuration Profiles
 
 ### Profile 1: Fast Daily Scans (Recommended)
@@ -97,6 +118,12 @@ diff_settings:
 tools:
   nuclei:
     enabled: true         # Vulnerability scanning
+  shodan:
+    enabled: true         # Asset intelligence
+    api_key: "YOUR_KEY"
+    scan_on:
+      - baseline_init
+      - new_subdomain
 
 notifications:
   slack:
@@ -104,6 +131,7 @@ notifications:
       - subdomain_takeover
       - high_value_target
       - new_vulnerability
+      - shodan_vulnerabilities
 
 diff_settings:
   min_change_percent: 0   # Detect everything
@@ -194,6 +222,9 @@ export BB_TELEGRAM_CHAT="chat_id"
 # Email
 export BB_EMAIL_USERNAME="your@email.com"
 export BB_EMAIL_PASSWORD="app_password"
+
+# Shodan
+export BB_SHODAN_API_KEY="your_shodan_api_key"
 
 # Then run
 ./monitor.py --monitor

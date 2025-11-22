@@ -164,8 +164,9 @@ fi
 check_dependencies
 
 # Build Python command
-SCRIPT_DIR=$(dirname "$0")
-PYTHON_CMD="python3 $SCRIPT_DIR/subdomain_finder.py -d $DOMAIN -o $OUTPUT"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PYTHON_CMD="python3 $PROJECT_ROOT/modules/subdomain_finder.py -d $DOMAIN -o $OUTPUT"
 
 if [ "$TAKEOVER" = false ]; then
     PYTHON_CMD="$PYTHON_CMD --no-takeover"

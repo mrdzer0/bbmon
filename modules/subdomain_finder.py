@@ -11,6 +11,7 @@ import json
 import subprocess
 import requests
 import re
+import tempfile
 from pathlib import Path
 from typing import Set, List, Dict, Any
 from collections import defaultdict
@@ -33,6 +34,10 @@ class SubdomainFinder:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.subdomains = set()
         self.results = defaultdict(set)
+
+        # Temporary directory for tool outputs (auto-cleanup)
+        self.temp_dir = tempfile.mkdtemp(prefix=f"subdomain_{domain}_")
+        self.temp_files = []  # Track temp files for cleanup
 
         # Subdomain takeover signatures
         self.takeover_signatures = {
@@ -144,17 +149,28 @@ class SubdomainFinder:
             print(f"{Colors.RED}[!] Command error: {e}{Colors.RESET}")
             return ""
 
+    def cleanup_temp_files(self):
+        """Clean up temporary files and directory"""
+        import shutil
+        try:
+            if os.path.exists(self.temp_dir):
+                shutil.rmtree(self.temp_dir)
+                print(f"{Colors.CYAN}[*] Cleaned up temporary files{Colors.RESET}")
+        except Exception as e:
+            print(f"{Colors.YELLOW}[!] Cleanup warning: {e}{Colors.RESET}")
+
     def run_subfinder(self) -> Set[str]:
         """Run subfinder for subdomain discovery"""
         print(f"{Colors.BLUE}[*] Running Subfinder...{Colors.RESET}")
 
-        output_file = self.output_dir / "subfinder.txt"
-        cmd = f"subfinder -d {self.domain} -all -recursive -silent -o {output_file}"
+        # Use temporary file
+        temp_file = os.path.join(self.temp_dir, "subfinder.txt")
+        cmd = f"subfinder -d {self.domain} -all -recursive -silent -o {temp_file}"
 
         self.run_command(cmd, timeout=600)
 
-        if output_file.exists():
-            with open(output_file, 'r') as f:
+        if os.path.exists(temp_file):
+            with open(temp_file, 'r') as f:
                 subs = set([line.strip() for line in f if line.strip()])
                 self.results['subfinder'] = subs
                 print(f"{Colors.GREEN}[+] Subfinder: {len(subs)} subdomains{Colors.RESET}")
@@ -166,17 +182,18 @@ class SubdomainFinder:
         """Run amass for subdomain discovery"""
         print(f"{Colors.BLUE}[*] Running Amass...{Colors.RESET}")
 
-        output_file = self.output_dir / "amass.txt"
+        # Use temporary file
+        temp_file = os.path.join(self.temp_dir, "amass.txt")
 
         if passive:
-            cmd = f"amass enum -passive -d {self.domain} -o {output_file}"
+            cmd = f"amass enum -passive -d {self.domain} -o {temp_file}"
         else:
-            cmd = f"amass enum -d {self.domain} -o {output_file}"
+            cmd = f"amass enum -d {self.domain} -o {temp_file}"
 
         self.run_command(cmd, timeout=900)
 
-        if output_file.exists():
-            with open(output_file, 'r') as f:
+        if os.path.exists(temp_file):
+            with open(temp_file, 'r') as f:
                 subs = set([line.strip() for line in f if line.strip()])
                 self.results['amass'] = subs
                 print(f"{Colors.GREEN}[+] Amass: {len(subs)} subdomains{Colors.RESET}")
@@ -201,7 +218,8 @@ class SubdomainFinder:
         """Run Chaos (ProjectDiscovery) for subdomain discovery"""
         print(f"{Colors.BLUE}[*] Running Chaos Dump (ProjectDiscovery)...{Colors.RESET}")
 
-        chaos_dir = self.output_dir / "chaos"
+        # Use temporary directory for chaos data
+        chaos_dir = Path(os.path.join(self.temp_dir, "chaos"))
         chaos_dir.mkdir(exist_ok=True)
 
         try:
@@ -238,12 +256,7 @@ class SubdomainFinder:
                     with open(txt_file, 'r') as f:
                         subs.update([line.strip() for line in f if line.strip()])
 
-                # Save combined results
-                chaos_output = self.output_dir / "chaos.txt"
-                with open(chaos_output, 'w') as f:
-                    f.write('\n'.join(sorted(subs)))
-
-                # Cleanup
+                # Cleanup zip file (temp dir will be cleaned later)
                 zip_file.unlink()
                 for txt_file in chaos_dir.glob("*.txt"):
                     txt_file.unlink()
@@ -309,13 +322,14 @@ class SubdomainFinder:
             'potential_takeovers': []
         }
 
-        # Run dnsx to get A records and CNAMEs
-        output_file = self.output_dir / "dnsx_output.json"
-        cmd = f"dnsx -l {temp_input} -a -cname -resp -json -o {output_file} -silent"
+        # Run dnsx to get A records and CNAMEs - use temporary file
+        temp_output = os.path.join(self.temp_dir, "dnsx_output.json")
+        cmd = f"dnsx -l {temp_input} -a -cname -resp -json -o {temp_output} -silent"
 
         self.run_command(cmd, timeout=600)
 
-        if output_file.exists():
+        if os.path.exists(temp_output):
+            output_file = temp_output
             with open(output_file, 'r') as f:
                 for line in f:
                     try:
@@ -416,10 +430,10 @@ class SubdomainFinder:
         return verified_takeovers
 
     def save_results(self):
-        """Save all results to files"""
-        print(f"\n{Colors.BLUE}[*] Saving results...{Colors.RESET}")
+        """Save final processed results (temp files are cleaned up separately)"""
+        print(f"\n{Colors.BLUE}[*] Saving final results...{Colors.RESET}")
 
-        # Save all subdomains
+        # Save all unique subdomains with domain-specific filename
         all_subs_file = self.output_dir / f"{self.domain}_all_subdomains.txt"
         with open(all_subs_file, 'w') as f:
             f.write('\n'.join(sorted(self.subdomains)))
@@ -528,6 +542,9 @@ class SubdomainFinder:
 
         if verified_takeovers:
             self.save_takeover_report(verified_takeovers)
+
+        # Cleanup temporary files
+        self.cleanup_temp_files()
 
         return {
             'subdomains': self.subdomains,

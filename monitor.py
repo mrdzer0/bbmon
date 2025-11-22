@@ -33,6 +33,18 @@ try:
 except ImportError:
     ENHANCED_HTTP = False
 
+try:
+    from modules.shodan_scanner import ShodanScanner
+    SHODAN_AVAILABLE = True
+except ImportError:
+    SHODAN_AVAILABLE = False
+
+try:
+    from modules.wayback_analyzer import WaybackAnalyzer
+    WAYBACK_AVAILABLE = True
+except ImportError:
+    WAYBACK_AVAILABLE = False
+
 class Colors:
     RED = '\033[91m'
     GREEN = '\033[92m'
@@ -49,6 +61,32 @@ class BBMonitor:
         self.setup_directories()
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.changes = defaultdict(list)
+
+        # Initialize Shodan scanner if configured
+        self.shodan_scanner = None
+        if SHODAN_AVAILABLE:
+            shodan_config = self.config.get('tools', {}).get('shodan', {})
+            if shodan_config.get('enabled', False):
+                api_key = shodan_config.get('api_key') or os.getenv('BB_SHODAN_API_KEY')
+                if api_key:
+                    try:
+                        self.shodan_scanner = ShodanScanner(api_key, shodan_config)
+                        print(f"{Colors.GREEN}[✓] Shodan integration enabled{Colors.RESET}")
+                    except Exception as e:
+                        print(f"{Colors.YELLOW}[!] Shodan initialization failed: {e}{Colors.RESET}")
+                else:
+                    print(f"{Colors.YELLOW}[!] Shodan enabled but no API key provided{Colors.RESET}")
+
+        # Initialize Wayback analyzer if configured
+        self.wayback_analyzer = None
+        if WAYBACK_AVAILABLE:
+            wayback_config = self.config.get('tools', {}).get('wayback', {})
+            if wayback_config.get('enabled', False):
+                try:
+                    self.wayback_analyzer = WaybackAnalyzer(wayback_config)
+                    print(f"{Colors.GREEN}[✓] Wayback Machine integration enabled{Colors.RESET}")
+                except Exception as e:
+                    print(f"{Colors.YELLOW}[!] Wayback analyzer initialization failed: {e}{Colors.RESET}")
 
     def _json_safe(self, data: Any) -> Any:
         """Recursively convert sets and other non-JSON types to JSON-safe types."""
@@ -171,6 +209,135 @@ class BBMonitor:
                 'dns_results': {},
                 'by_source': {}
             }
+
+    def run_shodan_scan(self, domain: str, subdomains: List[str]) -> Dict[str, Any]:
+        """Run Shodan scans on discovered assets"""
+        if not self.shodan_scanner:
+            return {}
+
+        shodan_results = {
+            'domain_search': {},
+            'subdomain_scans': {},
+            'summary': {},
+            'timestamp': self.timestamp
+        }
+
+        try:
+            # Get API info
+            api_info = self.shodan_scanner.get_api_info()
+            print(f"{Colors.CYAN}  [Shodan] Plan: {api_info.get('plan', 'unknown')}, "
+                  f"Credits: {api_info.get('query_credits', 0)}{Colors.RESET}")
+
+            # Search domain
+            print(f"{Colors.CYAN}  [Shodan] Searching domain: {domain}{Colors.RESET}")
+            domain_results = self.shodan_scanner.search_domain(domain)
+            shodan_results['domain_search'] = {
+                'total': domain_results.get('total', 0),
+                'matches': domain_results.get('matches', [])[:10]  # Limit to 10
+            }
+
+            # Scan subdomains if configured
+            shodan_config = self.config.get('tools', {}).get('shodan', {})
+            if shodan_config.get('dns_resolve', True) and subdomains:
+                print(f"{Colors.CYAN}  [Shodan] Scanning {len(subdomains)} subdomains...{Colors.RESET}")
+                scan_results = self.shodan_scanner.scan_subdomains(subdomains[:50])  # Limit to 50
+                shodan_results['subdomain_scans'] = scan_results
+
+            # Generate summary report
+            report = self.shodan_scanner.generate_report()
+            shodan_results['summary'] = report['summary']
+
+            # Save detailed results
+            output_dir = Path(self.config['monitoring']['data_dir']) / 'shodan_scans'
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_file = output_dir / f"{domain}_{self.timestamp}.json"
+            self.shodan_scanner.save_results(output_file)
+
+            # Print summary
+            summary = shodan_results['summary']
+            print(f"{Colors.GREEN}  [Shodan] Hosts scanned: {summary.get('total_hosts', 0)}{Colors.RESET}")
+            print(f"{Colors.YELLOW}  [Shodan] With vulnerabilities: {summary.get('with_vulnerabilities', 0)}{Colors.RESET}")
+            print(f"{Colors.RED}  [Shodan] High-value hosts: {summary.get('high_value_hosts', 0)}{Colors.RESET}")
+
+            # Flag high-value findings for notifications
+            if summary.get('with_vulnerabilities', 0) > 0:
+                self.changes['shodan_vulnerabilities'].append({
+                    'domain': domain,
+                    'count': summary.get('with_vulnerabilities', 0),
+                    'severity': 'high'
+                })
+
+        except Exception as e:
+            print(f"{Colors.RED}[!] Shodan scan error: {e}{Colors.RESET}")
+
+        return shodan_results
+
+    def run_wayback_scan(self, domain: str) -> Dict[str, Any]:
+        """Run Wayback Machine analysis on domain"""
+        if not self.wayback_analyzer:
+            return {}
+
+        wayback_results = {
+            'total_urls': 0,
+            'categorized': {},
+            'high_value': [],
+            'statistics': {},
+            'timestamp': self.timestamp
+        }
+
+        try:
+            print(f"{Colors.CYAN}[*] Fetching URLs from Wayback Machine...{Colors.RESET}")
+
+            # Analyze domain
+            output_dir = Path(self.config['monitoring']['data_dir']) / 'wayback_scans'
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_file = output_dir / f"{domain}_{self.timestamp}.json"
+
+            results = self.wayback_analyzer.analyze_domain(domain, str(output_file))
+
+            # Extract key results
+            wayback_results['total_urls'] = results.get('total_urls', 0)
+            wayback_results['categorized'] = results.get('categorized', {})
+            wayback_results['high_value'] = results.get('high_value', [])
+            wayback_results['statistics'] = results.get('statistics', {})
+
+            # Print summary
+            print(f"{Colors.GREEN}  [Wayback] Total URLs: {wayback_results['total_urls']}{Colors.RESET}")
+
+            stats = wayback_results['statistics']
+            if stats.get('by_priority'):
+                critical = stats['by_priority'].get('critical', 0)
+                high = stats['by_priority'].get('high', 0)
+                if critical > 0:
+                    print(f"{Colors.RED}  [Wayback] Critical URLs: {critical}{Colors.RESET}")
+                if high > 0:
+                    print(f"{Colors.YELLOW}  [Wayback] High priority URLs: {high}{Colors.RESET}")
+
+            # Export high-value categories to separate files
+            wayback_config = self.config.get('tools', {}).get('wayback', {})
+            export_categories = wayback_config.get('export_categories', [])
+
+            for category in export_categories:
+                if category in wayback_results['categorized']:
+                    category_file = output_dir / f"{domain}_{category}_urls.txt"
+                    self.wayback_analyzer.export_category_urls(results, category, str(category_file))
+
+            # Flag sensitive findings for notifications
+            for category in ['backup', 'database', 'config', 'credentials', 'version_control']:
+                if category in wayback_results['categorized']:
+                    count = len(wayback_results['categorized'][category])
+                    if count > 0:
+                        self.changes[f'wayback_{category}'].append({
+                            'domain': domain,
+                            'count': count,
+                            'severity': 'high' if category in ['credentials', 'version_control'] else 'medium',
+                            'urls': [item['url'] for item in wayback_results['categorized'][category][:5]]  # Top 5
+                        })
+
+        except Exception as e:
+            print(f"{Colors.RED}[!] Wayback scan error: {e}{Colors.RESET}")
+
+        return wayback_results
 
     def probe_http(self, subdomains: Set[str]) -> Dict[str, Any]:
         """Probe HTTP/HTTPS endpoints (enhanced version)"""
@@ -319,6 +486,28 @@ class BBMonitor:
             baseline['dns_info'] = subdomain_results.get('dns_results', {})
         else:
             subdomains = {domain}
+
+        # 1.5. Shodan scanning (if enabled)
+        if self.shodan_scanner:
+            shodan_config = self.config.get('tools', {}).get('shodan', {})
+            scan_triggers = shodan_config.get('scan_on', [])
+
+            if 'baseline_init' in scan_triggers:
+                print(f"{Colors.CYAN}[*] Running Shodan scans...{Colors.RESET}")
+                shodan_results = self.run_shodan_scan(domain, list(subdomains))
+                baseline['shodan_data'] = shodan_results
+                print(f"{Colors.GREEN}[+] Shodan scan completed{Colors.RESET}")
+
+        # 1.6. Wayback Machine analysis (if enabled)
+        if self.wayback_analyzer:
+            wayback_config = self.config.get('tools', {}).get('wayback', {})
+            scan_triggers = wayback_config.get('scan_on', [])
+
+            if 'baseline_init' in scan_triggers:
+                print(f"{Colors.CYAN}[*] Running Wayback Machine analysis...{Colors.RESET}")
+                wayback_results = self.run_wayback_scan(domain)
+                baseline['wayback_data'] = wayback_results
+                print(f"{Colors.GREEN}[+] Wayback analysis completed{Colors.RESET}")
 
         # 2. Probe HTTP
         if self.config['checks']['web_application']['http_responses']:

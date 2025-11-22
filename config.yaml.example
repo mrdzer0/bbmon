@@ -57,7 +57,7 @@ checks:
     javascript_files: true          # JS file analysis
     api_endpoints: true             # API endpoint extraction
     forms: true                     # Form detection
-    wayback_urls: false             # Not implemented yet
+    wayback_urls: true              # Wayback Machine historical URLs
 
   # Attack surface monitoring
   attack_surface:
@@ -104,6 +104,7 @@ notifications:
       - new_vulnerability
       - technology_change
       - critical_change
+      - wayback_sensitive_files
 
   # Discord notifications
   discord:
@@ -159,6 +160,9 @@ priority:
     - exposed_sensitive_file
     - high_value_target
     - outdated_technology
+    - wayback_sensitive_files
+    - wayback_credentials
+    - wayback_version_control
 
   # Medium priority - daily digest
   medium:
@@ -223,6 +227,37 @@ tools:
       - high
       - medium
 
+  # Shodan - Internet-wide asset intelligence
+  shodan:
+    enabled: false  # Set to true and add API key to enable
+    api_key: ""     # Add your Shodan API key (get from https://account.shodan.io/)
+    max_results: 100
+    timeout: 30
+    rate_limit_delay: 1  # Seconds between requests
+    scan_on:
+      - new_subdomain      # Scan newly discovered subdomains
+      - baseline_init      # Scan during initial baseline
+    lookup_ips: true       # Lookup resolved IPs
+    dns_resolve: true      # Use Shodan DNS for resolution
+
+  # Wayback Machine - Historical URL discovery
+  wayback:
+    enabled: false  # Set to true to enable
+    max_results: 10000  # Maximum URLs to fetch per domain
+    timeout: 30
+    rate_limit_delay: 1
+    scan_on:
+      - new_subdomain      # Scan newly discovered subdomains
+      - baseline_init      # Scan during initial baseline
+    classify_urls: true    # Classify URLs by file type
+    export_categories:     # Auto-export these categories to files
+      - backup
+      - database
+      - config
+      - credentials
+      - version_control
+    min_score: 20          # Only save URLs with score >= 20
+
 # ============================================================================
 # ADVANCED OPTIONS - Performance tuning
 # ============================================================================
@@ -275,5 +310,6 @@ advanced:
 # export BB_TELEGRAM_TOKEN="bot_token"
 # export BB_TELEGRAM_CHAT="chat_id"
 # export BB_EMAIL_PASSWORD="app_password"
+# export BB_SHODAN_API_KEY="your_shodan_api_key"
 #
 # These will override the values in this file

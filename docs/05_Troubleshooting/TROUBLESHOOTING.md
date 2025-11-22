@@ -4,12 +4,46 @@ Common issues and solutions for Bug Bounty Monitoring Framework.
 
 ## Table of Contents
 
+- [Path & Directory Issues](#path--directory-issues)
 - [Installation Issues](#installation-issues)
 - [Tool-Specific Problems](#tool-specific-problems)
 - [Performance Issues](#performance-issues)
 - [Detection Issues](#detection-issues)
 - [Notification Problems](#notification-problems)
 - [Data Issues](#data-issues)
+
+## Path & Directory Issues
+
+### File or Directory Not Found
+
+**Problem**: Scripts can't find modules, config files, or data directories
+
+**Solution**: See [PATH_TROUBLESHOOTING.md](PATH_TROUBLESHOOTING.md) for comprehensive path troubleshooting guide.
+
+Quick fixes:
+```bash
+# Always run from project root
+cd /path/to/bb-monitor
+
+# Test path configuration
+./utils/test_paths.sh
+
+# Create missing directories
+mkdir -p data/{baseline,diffs,subdomain_scans,shodan_scans}
+mkdir -p reports logs
+```
+
+### Script Path Issues
+
+**Problem**: `can't open file './utils/subdomain_finder.py': No such file or directory`
+
+**Solution**: Updated to correct paths. All utility scripts now properly reference `modules/` directory:
+```bash
+# This now works correctly
+./utils/subdomain_scan.sh -d example.com
+```
+
+If still having issues, ensure you're on the latest version and paths are correct.
 
 ## Installation Issues
 

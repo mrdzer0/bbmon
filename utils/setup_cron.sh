@@ -17,10 +17,10 @@ fi
 chmod +x "$MONITOR_SCRIPT"
 
 # Create log directory
-mkdir -p "${SCRIPT_DIR}/logs"
+mkdir -p "${PROJECT_ROOT}/logs"
 
 # Cron job command
-CRON_CMD="0 */6 * * * cd ${SCRIPT_DIR} && ${MONITOR_SCRIPT} --monitor >> ${SCRIPT_DIR}/logs/monitor.log 2>&1"
+CRON_CMD="0 */6 * * * cd ${PROJECT_ROOT} && ${MONITOR_SCRIPT} --monitor >> ${PROJECT_ROOT}/logs/monitor.log 2>&1"
 
 # Check if cron job already exists
 if crontab -l 2>/dev/null | grep -q "$MONITOR_SCRIPT"; then
@@ -48,7 +48,7 @@ echo "Command: $CRON_CMD"
 echo ""
 echo "To view cron jobs: crontab -l"
 echo "To remove cron job: crontab -e (then delete the line)"
-echo "To view logs: tail -f ${SCRIPT_DIR}/logs/monitor.log"
+echo "To view logs: tail -f ${PROJECT_ROOT}/logs/monitor.log"
 echo ""
 
 # Offer different schedules
