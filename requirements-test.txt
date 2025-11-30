@@ -1,0 +1,13 @@
+# Testing requirements for bb-monitor
+
+# Unit testing
+unittest2>=1.1.0
+
+# Test coverage
+coverage>=7.0.0
+
+# Mocking
+mock>=4.0.3
+
+# Production requirements (needed for tests)
+-r requirements.txt

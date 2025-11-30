@@ -1,200 +1,205 @@
-# Bug Bounty Monitoring Framework - Documentation
+# BB-Monitor Documentation
 
-Welcome to the complete documentation for the BB-Monitor framework! This documentation is organized by purpose to help you find what you need quickly.
+Complete documentation for Bug Bounty Monitoring Framework.
 
 ## 📚 Documentation Structure
 
-### 🚀 [01. Getting Started](01_Getting_Started/)
-**Start here if you're new to BB-Monitor**
+```
+docs/
+├── 01_Getting_Started/       # Installation, setup, basics
+├── 02_Tutorials/             # Step-by-step guides
+├── 03_Guides/                # Feature-specific guides
+├── 04_Reference/             # Configuration and API reference
+├── 05_Troubleshooting/       # Common issues and solutions
+└── 06_Testing/               # Testing documentation
+```
 
-Essential guides to get you up and running quickly:
-- **[USAGE.md](01_Getting_Started/USAGE.md)** - How to use the framework (installation, basic commands, operations)
-- **[CONFIG_QUICK_START.md](01_Getting_Started/CONFIG_QUICK_START.md)** - 5-minute configuration guide
-- **[PROJECT_STRUCTURE.md](01_Getting_Started/PROJECT_STRUCTURE.md)** - Understanding the codebase structure
+## 🚀 Quick Navigation
 
-**Best for**: First-time users, quick setup, understanding basics
+### New Users Start Here
 
----
+1. **[Getting Started](01_Getting_Started/README.md)** - Installation and first run
+2. **[Usage Guide](01_Getting_Started/USAGE.md)** - Basic usage and commands
+3. **[Configuration Quick Start](01_Getting_Started/CONFIG_QUICK_START.md)** - Essential config
 
-### 📖 [02. Tutorials](02_Tutorials/)
-**Step-by-step guides for specific use cases**
+### Common Tasks
 
-Learn by example with complete walkthroughs:
-- **[MULTI_PROGRAM_SETUP.md](02_Tutorials/MULTI_PROGRAM_SETUP.md)** - Monitor multiple bug bounty programs (comprehensive guide)
-- **[MULTI_PROGRAM_EXAMPLE.md](02_Tutorials/MULTI_PROGRAM_EXAMPLE.md)** - Real-world example: HackerOne, Bugcrowd, Intigriti
+| Task | Documentation |
+|------|--------------|
+| 📦 Initial Setup | [Getting Started](01_Getting_Started/) |
+| ⚙️ Configuration | [Configuration Reference](04_Reference/CONFIGURATION.md) |
+| 🔔 Setup Discord | [Discord Setup Guide](03_Guides/DISCORD_SETUP.md) |
+| 🛰️ Add Shodan | [Shodan Integration](03_Guides/SHODAN_INTEGRATION.md) |
+| 📜 Add Wayback | [Wayback Integration](03_Guides/WAYBACK_INTEGRATION.md) |
+| 🎯 Multiple Programs | [Multi-Program Setup](02_Tutorials/MULTI_PROGRAM_SETUP.md) |
+| 🧪 Testing | [Testing Guide](06_Testing/TESTING.md) |
+| 🐛 Troubleshooting | [Troubleshooting Guide](05_Troubleshooting/TROUBLESHOOTING.md) |
 
-**Best for**: Learning workflows, real-world scenarios, multi-program monitoring
+## 📖 Documentation Index
 
----
+### 01. Getting Started
 
-### 🎯 [03. Guides](03_Guides/)
-**In-depth guides for specific features**
+Essential documentation for new users.
 
-Detailed documentation for advanced features:
-- **[SHODAN_INTEGRATION.md](03_Guides/SHODAN_INTEGRATION.md)** - Shodan API integration (setup, usage, examples)
+| Document | Description |
+|----------|-------------|
+| [README.md](01_Getting_Started/README.md) | Overview and quick links |
+| [USAGE.md](01_Getting_Started/USAGE.md) | Basic usage and commands |
+| [CONFIG_QUICK_START.md](01_Getting_Started/CONFIG_QUICK_START.md) | Quick configuration guide |
+| [PROJECT_STRUCTURE.md](01_Getting_Started/PROJECT_STRUCTURE.md) | Project layout and files |
 
-**Best for**: Understanding specific features, advanced usage, integrations
+### 02. Tutorials
 
----
+Step-by-step guides for common scenarios.
 
-### 📋 [04. Reference](04_Reference/)
-**Technical specifications and references**
+| Document | Description |
+|----------|-------------|
+| [README.md](02_Tutorials/README.md) | Tutorial overview |
+| [MULTI_PROGRAM_SETUP.md](02_Tutorials/MULTI_PROGRAM_SETUP.md) | Monitor multiple programs |
+| [MULTI_PROGRAM_EXAMPLE.md](02_Tutorials/MULTI_PROGRAM_EXAMPLE.md) | Complete example walkthrough |
+| [QUICK_START_MULTI_PROGRAM.md](02_Tutorials/QUICK_START_MULTI_PROGRAM.md) | Quick multi-program guide |
 
-Complete technical documentation:
-- **[CONFIGURATION.md](04_Reference/CONFIGURATION.md)** - Complete configuration reference (all options explained)
-- **[CHANGELOG_TEMP_FILES.md](04_Reference/CHANGELOG_TEMP_FILES.md)** - Technical details about temp file management
+### 03. Guides
 
-**Best for**: Looking up specific config options, technical details, API references
+Feature-specific implementation guides.
 
----
+| Document | Description |
+|----------|-------------|
+| [README.md](03_Guides/README.md) | Guide overview |
+| [DISCORD_SETUP.md](03_Guides/DISCORD_SETUP.md) | Discord webhook setup |
+| [SHODAN_INTEGRATION.md](03_Guides/SHODAN_INTEGRATION.md) | Shodan API integration |
+| [WAYBACK_INTEGRATION.md](03_Guides/WAYBACK_INTEGRATION.md) | Wayback Machine integration |
 
-### 🔧 [05. Troubleshooting](05_Troubleshooting/)
-**Problem-solving and debugging**
+### 04. Reference
 
-Solutions to common issues:
-- **[TROUBLESHOOTING.md](05_Troubleshooting/TROUBLESHOOTING.md)** - General troubleshooting guide
-- **[PATH_TROUBLESHOOTING.md](05_Troubleshooting/PATH_TROUBLESHOOTING.md)** - Path and directory issues
+Technical reference and configuration details.
 
-**Best for**: Fixing errors, debugging problems, understanding error messages
+| Document | Description |
+|----------|-------------|
+| [README.md](04_Reference/README.md) | Reference overview |
+| [CONFIGURATION.md](04_Reference/CONFIGURATION.md) | Complete configuration reference |
 
----
+### 05. Troubleshooting
 
-## 🗺️ Quick Navigation
+Common issues and solutions.
 
-### I want to...
+| Document | Description |
+|----------|-------------|
+| [README.md](05_Troubleshooting/README.md) | Troubleshooting overview |
+| [TROUBLESHOOTING.md](05_Troubleshooting/TROUBLESHOOTING.md) | Common problems and fixes |
+| [MULTI_PROGRAM_DATA_ISOLATION.md](05_Troubleshooting/MULTI_PROGRAM_DATA_ISOLATION.md) | Multi-program data issues |
+| [PATH_TROUBLESHOOTING.md](05_Troubleshooting/PATH_TROUBLESHOOTING.md) | Path-related issues |
 
-**Get started quickly**
-→ [01_Getting_Started/USAGE.md](01_Getting_Started/USAGE.md)
-→ [01_Getting_Started/CONFIG_QUICK_START.md](01_Getting_Started/CONFIG_QUICK_START.md)
+### 06. Testing
 
-**Monitor multiple programs**
-→ [02_Tutorials/MULTI_PROGRAM_SETUP.md](02_Tutorials/MULTI_PROGRAM_SETUP.md)
-→ [02_Tutorials/MULTI_PROGRAM_EXAMPLE.md](02_Tutorials/MULTI_PROGRAM_EXAMPLE.md)
+Testing documentation and guides.
 
-**Integrate with Shodan**
-→ [03_Guides/SHODAN_INTEGRATION.md](03_Guides/SHODAN_INTEGRATION.md)
+| Document | Description |
+|----------|-------------|
+| [README.md](06_Testing/README.md) | Testing overview |
+| [TESTING.md](06_Testing/TESTING.md) | Complete testing guide |
+| [TEST_RESULTS.md](06_Testing/TEST_RESULTS.md) | Unit test results |
+| [TEST_CHANGES.md](06_Testing/TEST_CHANGES.md) | Baseline alert fix testing |
+| [SUMMARY.md](06_Testing/SUMMARY.md) | Complete project summary |
 
-**Customize my configuration**
-→ [04_Reference/CONFIGURATION.md](04_Reference/CONFIGURATION.md)
+## 🎯 By Use Case
 
-**Fix an error**
-→ [05_Troubleshooting/TROUBLESHOOTING.md](05_Troubleshooting/TROUBLESHOOTING.md)
-→ [05_Troubleshooting/PATH_TROUBLESHOOTING.md](05_Troubleshooting/PATH_TROUBLESHOOTING.md)
+### First Time Setup
+```
+1. Getting Started/USAGE.md
+2. Getting Started/CONFIG_QUICK_START.md
+3. Guides/DISCORD_SETUP.md
+4. Run: ./monitor.py --init
+```
 
-**Understand the codebase**
-→ [01_Getting_Started/PROJECT_STRUCTURE.md](01_Getting_Started/PROJECT_STRUCTURE.md)
+### Adding New Features
+```
+1. Guides/SHODAN_INTEGRATION.md (if adding Shodan)
+2. Guides/WAYBACK_INTEGRATION.md (if adding Wayback)
+3. Reference/CONFIGURATION.md (for all options)
+```
 
----
+### Managing Multiple Programs
+```
+1. Tutorials/MULTI_PROGRAM_SETUP.md
+2. Tutorials/MULTI_PROGRAM_EXAMPLE.md
+3. Troubleshooting/MULTI_PROGRAM_DATA_ISOLATION.md
+```
 
-## 📖 Reading Paths
-
-### For Beginners
-
-1. [Getting Started - USAGE.md](01_Getting_Started/USAGE.md) - Learn the basics
-2. [Getting Started - CONFIG_QUICK_START.md](01_Getting_Started/CONFIG_QUICK_START.md) - Setup notifications
-3. Run your first scan!
-4. [Tutorials - MULTI_PROGRAM_SETUP.md](02_Tutorials/MULTI_PROGRAM_SETUP.md) - Scale up
-
-### For Advanced Users
-
-1. [Reference - CONFIGURATION.md](04_Reference/CONFIGURATION.md) - Deep dive into config
-2. [Guides - SHODAN_INTEGRATION.md](03_Guides/SHODAN_INTEGRATION.md) - Add Shodan
-3. [Tutorials - MULTI_PROGRAM_EXAMPLE.md](02_Tutorials/MULTI_PROGRAM_EXAMPLE.md) - Production setup
-
-### For Troubleshooting
-
-1. [Troubleshooting - TROUBLESHOOTING.md](05_Troubleshooting/TROUBLESHOOTING.md) - Common issues
-2. [Troubleshooting - PATH_TROUBLESHOOTING.md](05_Troubleshooting/PATH_TROUBLESHOOTING.md) - Path errors
-3. Still stuck? Check logs: `tail -f logs/monitor.log`
-
----
-
-## 📊 Documentation Overview
-
-| Category | Files | Purpose | Audience |
-|----------|-------|---------|----------|
-| **Getting Started** | 3 files | Quick start, basics | Beginners |
-| **Tutorials** | 2 files | Step-by-step examples | All levels |
-| **Guides** | 1 file | Feature deep-dives | Intermediate |
-| **Reference** | 2 files | Technical specs | Advanced |
-| **Troubleshooting** | 2 files | Problem solving | All levels |
-
-**Total**: 10 comprehensive documents covering every aspect of BB-Monitor
-
----
-
-## 🔍 Search by Topic
-
-### Configuration
-- Quick setup: [01_Getting_Started/CONFIG_QUICK_START.md](01_Getting_Started/CONFIG_QUICK_START.md)
-- Complete reference: [04_Reference/CONFIGURATION.md](04_Reference/CONFIGURATION.md)
-- Multi-program config: [02_Tutorials/MULTI_PROGRAM_SETUP.md](02_Tutorials/MULTI_PROGRAM_SETUP.md)
-
-### Monitoring
-- Basic usage: [01_Getting_Started/USAGE.md](01_Getting_Started/USAGE.md)
-- Multiple programs: [02_Tutorials/MULTI_PROGRAM_SETUP.md](02_Tutorials/MULTI_PROGRAM_SETUP.md)
-- Example workflow: [02_Tutorials/MULTI_PROGRAM_EXAMPLE.md](02_Tutorials/MULTI_PROGRAM_EXAMPLE.md)
-
-### Integrations
-- Shodan: [03_Guides/SHODAN_INTEGRATION.md](03_Guides/SHODAN_INTEGRATION.md)
-- Notifications: [01_Getting_Started/CONFIG_QUICK_START.md](01_Getting_Started/CONFIG_QUICK_START.md)
+### Testing & Development
+```
+1. Testing/TESTING.md (complete guide)
+2. Testing/TEST_RESULTS.md (test coverage)
+3. Run: ./run_tests.py
+4. Run: ./tests/test_real_notifications.py --all
+```
 
 ### Troubleshooting
-- General issues: [05_Troubleshooting/TROUBLESHOOTING.md](05_Troubleshooting/TROUBLESHOOTING.md)
-- Path errors: [05_Troubleshooting/PATH_TROUBLESHOOTING.md](05_Troubleshooting/PATH_TROUBLESHOOTING.md)
+```
+1. Troubleshooting/TROUBLESHOOTING.md (start here)
+2. Guides/DISCORD_SETUP.md (Discord issues)
+3. Troubleshooting/PATH_TROUBLESHOOTING.md (path issues)
+```
 
-### Architecture
-- Project structure: [01_Getting_Started/PROJECT_STRUCTURE.md](01_Getting_Started/PROJECT_STRUCTURE.md)
-- Temp files: [04_Reference/CHANGELOG_TEMP_FILES.md](04_Reference/CHANGELOG_TEMP_FILES.md)
+## 🔍 Quick Search
+
+### Commands
+- **Initialize**: `./monitor.py --init` - See [USAGE.md](01_Getting_Started/USAGE.md)
+- **Monitor**: `./monitor.py --monitor` - See [USAGE.md](01_Getting_Started/USAGE.md)
+- **Dashboard**: `./modules/dashboard.py` - See [USAGE.md](01_Getting_Started/USAGE.md)
+- **Testing**: `./run_tests.py` - See [Testing/TESTING.md](06_Testing/TESTING.md)
+
+### Configuration
+- **Discord**: [Discord Setup Guide](03_Guides/DISCORD_SETUP.md)
+- **Shodan**: [Shodan Integration](03_Guides/SHODAN_INTEGRATION.md)
+- **Wayback**: [Wayback Integration](03_Guides/WAYBACK_INTEGRATION.md)
+- **Full Config**: [Configuration Reference](04_Reference/CONFIGURATION.md)
+
+### Features
+- **Subdomain Discovery**: [Getting Started](01_Getting_Started/)
+- **HTTP Monitoring**: [Getting Started](01_Getting_Started/)
+- **Change Detection**: [USAGE.md](01_Getting_Started/USAGE.md)
+- **Notifications**: [Discord Setup](03_Guides/DISCORD_SETUP.md)
+
+## 📝 Contributing to Documentation
+
+### Adding New Documentation
+
+1. Choose appropriate directory:
+   - `01_Getting_Started/` - Basic setup and usage
+   - `02_Tutorials/` - Step-by-step guides
+   - `03_Guides/` - Feature-specific guides
+   - `04_Reference/` - Technical reference
+   - `05_Troubleshooting/` - Problem solutions
+   - `06_Testing/` - Testing documentation
+
+2. Create markdown file with clear structure
+3. Update relevant README.md
+4. Link from main docs/README.md
+
+### Documentation Standards
+
+- ✅ Use clear, concise language
+- ✅ Include code examples
+- ✅ Add command outputs
+- ✅ Cross-reference related docs
+- ✅ Keep table of contents updated
+
+## 🆘 Need Help?
+
+1. **Check docs** - Start with relevant section above
+2. **Search** - Use Ctrl+F in browser
+3. **Troubleshooting** - See [Troubleshooting Guide](05_Troubleshooting/)
+4. **Issues** - [GitHub Issues](https://github.com/mrdzer0/bb-monitor/issues)
+
+## 📊 Documentation Stats
+
+- **Total Docs**: 30+ files
+- **Categories**: 6 main sections
+- **Code Examples**: 150+ snippets
+- **Test Coverage**: 57 unit tests (100%)
+- **Last Updated**: 2025-01-30
 
 ---
 
-## 💡 Tips
-
-**First time using BB-Monitor?**
-Start with the [Quick Start](01_Getting_Started/USAGE.md#quick-start) section
-
-**Need help with a specific feature?**
-Check the [Guides](03_Guides/) section
-
-**Something not working?**
-Head to [Troubleshooting](05_Troubleshooting/)
-
-**Want to see examples?**
-Browse the [Tutorials](02_Tutorials/) section
-
----
-
-## 🤝 Contributing to Documentation
-
-Found an error or want to improve the docs?
-
-1. Documentation follows this structure:
-   - **Getting Started**: Essential information for new users
-   - **Tutorials**: Complete examples and walkthroughs
-   - **Guides**: In-depth feature documentation
-   - **Reference**: Technical specifications
-   - **Troubleshooting**: Problem-solving
-
-2. Each file should:
-   - Have a clear purpose
-   - Include examples
-   - Be well-organized with headers
-   - Link to related documents
-
-3. Submit improvements via pull request
-
----
-
-## 📞 Getting Help
-
-**Can't find what you need?**
-
-1. Use the search function above
-2. Check the [Troubleshooting](05_Troubleshooting/) section
-3. Review logs: `tail -f logs/monitor.log`
-4. Open an issue on GitHub
-
----
-
-**Ready to start?** → [Begin with Getting Started](01_Getting_Started/)
+**Start your journey**: [Getting Started →](01_Getting_Started/README.md)

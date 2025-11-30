@@ -666,38 +666,257 @@ class Notifier:
 
     def notify_changes(self, domain: str, changes: Dict[str, Any]):
         """Send notifications for detected changes"""
+        # Check if there are any changes worth notifying
         if not any([
             changes.get('new_subdomains'),
+            changes.get('removed_subdomains'),
             changes.get('new_endpoints'),
+            changes.get('removed_endpoints'),
             changes.get('changed_endpoints'),
-            changes.get('new_js_endpoints')
+            changes.get('new_js_endpoints'),
+            changes.get('new_takeovers'),
+            changes.get('resolved_takeovers')
         ]):
+            print(f"[*] No changes to notify for {domain}")
             return
 
         message = f"Changes detected for domain: *{domain}*"
 
-        # Determine priority
+        # Determine priority based on change types
         high_priority = False
+        critical_priority = False
+
+        # Critical: Subdomain takeovers
+        if changes.get('new_takeovers'):
+            critical_priority = True
+            high_priority = True
+
+        # High: New subdomains or endpoints
         if changes.get('new_subdomains') or changes.get('new_endpoints'):
             high_priority = True
 
-        # Send notifications
-        if self.config['slack']['enabled']:
-            if high_priority or 'all' in self.config['slack']['notify_on']:
+        # High: Significant endpoint changes
+        if changes.get('changed_endpoints'):
+            for endpoint_change in changes.get('changed_endpoints', []):
+                endpoint_changes = endpoint_change.get('changes', {})
+                # Status code changes are high priority
+                if 'status_code' in endpoint_changes:
+                    high_priority = True
+                # High-value flags are critical
+                if 'new_flags' in endpoint_changes:
+                    for flag in endpoint_changes['new_flags']:
+                        if flag.get('severity') == 'high':
+                            critical_priority = True
+                            high_priority = True
+
+        print(f"[*] Sending change notifications for {domain} (Priority: {'CRITICAL' if critical_priority else 'HIGH' if high_priority else 'NORMAL'})")
+
+        # Send notifications based on configuration
+        if self.config.get('slack', {}).get('enabled'):
+            notify_on = self.config['slack'].get('notify_on', [])
+            should_notify = False
+
+            if 'all' in notify_on:
+                should_notify = True
+            elif critical_priority and 'subdomain_takeover' in notify_on:
+                should_notify = True
+            elif changes.get('new_subdomains') and 'new_subdomain' in notify_on:
+                should_notify = True
+            elif changes.get('new_endpoints') and 'new_endpoint' in notify_on:
+                should_notify = True
+            elif changes.get('changed_endpoints') and 'changed_endpoint' in notify_on:
+                should_notify = True
+
+            if should_notify:
                 self.send_slack(message, changes)
 
-        if self.config['discord']['enabled']:
-            if high_priority or 'all' in self.config['discord']['notify_on']:
-                self.send_discord(message, changes)
+        if self.config.get('discord', {}).get('enabled'):
+            notify_on = self.config['discord'].get('notify_on', [])
+            should_notify = False
 
-        if self.config['telegram']['enabled']:
-            if high_priority or 'all' in self.config['telegram']['notify_on']:
+            if 'all' in notify_on:
+                should_notify = True
+            elif critical_priority and 'subdomain_takeover' in notify_on:
+                should_notify = True
+            elif changes.get('new_subdomains') and 'new_subdomain' in notify_on:
+                should_notify = True
+            elif changes.get('new_endpoints') and 'new_endpoint' in notify_on:
+                should_notify = True
+            elif changes.get('changed_endpoints') and 'changed_endpoint' in notify_on:
+                should_notify = True
+
+            if should_notify:
+                self._send_discord_changes(domain, changes, critical_priority)
+
+        if self.config.get('telegram', {}).get('enabled'):
+            notify_on = self.config['telegram'].get('notify_on', [])
+            should_notify = False
+
+            if 'all' in notify_on:
+                should_notify = True
+            elif critical_priority and 'subdomain_takeover' in notify_on:
+                should_notify = True
+            elif changes.get('new_subdomains') and 'new_subdomain' in notify_on:
+                should_notify = True
+            elif changes.get('new_endpoints') and 'new_endpoint' in notify_on:
+                should_notify = True
+            elif changes.get('changed_endpoints') and 'changed_endpoint' in notify_on:
+                should_notify = True
+
+            if should_notify:
                 self.send_telegram(message, changes)
 
-        if self.config['email']['enabled']:
-            if high_priority:
+        if self.config.get('email', {}).get('enabled'):
+            if critical_priority or high_priority:
                 self.send_email(
                     f"Bug Bounty Changes: {domain}",
                     message,
                     changes
                 )
+
+    def _send_discord_changes(self, domain: str, changes: Dict[str, Any], is_critical: bool = False):
+        """Send detailed change notification to Discord"""
+        webhook_url = self.config['discord']['webhook_url']
+
+        # Build description
+        description = f"**Monitoring changes detected for {domain}**\n\n"
+
+        # Count changes
+        total_changes = (
+            len(changes.get('new_subdomains', [])) +
+            len(changes.get('new_endpoints', [])) +
+            len(changes.get('changed_endpoints', [])) +
+            len(changes.get('new_js_endpoints', [])) +
+            len(changes.get('new_takeovers', []))
+        )
+
+        description += f"**Total Changes:** {total_changes}\n"
+
+        # Determine color
+        if is_critical:
+            color = 15158332  # Red
+        elif changes.get('new_subdomains') or changes.get('new_endpoints'):
+            color = 15105570  # Orange
+        else:
+            color = 3447003   # Blue
+
+        fields = []
+
+        # New subdomains
+        if changes.get('new_subdomains'):
+            subdomain_list = "\n".join([f"• {sub}" for sub in changes['new_subdomains'][:10]])
+            if len(changes['new_subdomains']) > 10:
+                subdomain_list += f"\n... and {len(changes['new_subdomains']) - 10} more"
+
+            fields.append({
+                "name": f"🆕 New Subdomains ({len(changes['new_subdomains'])})",
+                "value": subdomain_list,
+                "inline": False
+            })
+
+        # Subdomain takeovers (CRITICAL)
+        if changes.get('new_takeovers'):
+            takeover_list = ""
+            for takeover in changes['new_takeovers'][:5]:
+                takeover_list += f"• **{takeover.get('subdomain', 'N/A')}**\n"
+                takeover_list += f"  Service: {takeover.get('service', 'unknown')}\n"
+                takeover_list += f"  CNAME: {takeover.get('cname', 'N/A')}\n"
+                takeover_list += f"  Confidence: {takeover.get('confidence', 'N/A')}\n"
+
+            fields.append({
+                "name": f"🚨 SUBDOMAIN TAKEOVERS ({len(changes['new_takeovers'])})",
+                "value": takeover_list,
+                "inline": False
+            })
+
+        # New endpoints
+        if changes.get('new_endpoints'):
+            endpoint_list = "\n".join([f"• {ep}" for ep in changes['new_endpoints'][:10]])
+            if len(changes['new_endpoints']) > 10:
+                endpoint_list += f"\n... and {len(changes['new_endpoints']) - 10} more"
+
+            fields.append({
+                "name": f"🔗 New Endpoints ({len(changes['new_endpoints'])})",
+                "value": endpoint_list,
+                "inline": False
+            })
+
+        # Changed endpoints
+        if changes.get('changed_endpoints'):
+            changed_list = ""
+            for item in changes['changed_endpoints'][:5]:
+                url = item.get('url', 'N/A')
+                endpoint_changes = item.get('changes', {})
+
+                changed_list += f"**{url}**\n"
+
+                # Status code change
+                if 'status_code' in endpoint_changes:
+                    sc = endpoint_changes['status_code']
+                    changed_list += f"  Status: {sc['old']} → {sc['new']}\n"
+
+                # Title change
+                if 'title' in endpoint_changes:
+                    tc = endpoint_changes['title']
+                    old_title = tc['old'][:30] if tc['old'] else 'None'
+                    new_title = tc['new'][:30] if tc['new'] else 'None'
+                    changed_list += f"  Title: {old_title}... → {new_title}...\n"
+
+                # Body length change
+                if 'body_length' in endpoint_changes:
+                    bl = endpoint_changes['body_length']
+                    changed_list += f"  Size: {bl['old']} → {bl['new']} ({bl['diff_percent']}%)\n"
+
+                # Technologies
+                if 'technologies' in endpoint_changes:
+                    tc = endpoint_changes['technologies']
+                    if tc['added']:
+                        changed_list += f"  Tech Added: {', '.join(tc['added'])}\n"
+
+                # High-value flags
+                if 'new_flags' in endpoint_changes:
+                    for flag in endpoint_changes['new_flags']:
+                        changed_list += f"  🚩 **{flag.get('message')}**\n"
+
+                changed_list += "\n"
+
+            if len(changes['changed_endpoints']) > 5:
+                changed_list += f"... and {len(changes['changed_endpoints']) - 5} more\n"
+
+            fields.append({
+                "name": f"🔄 Changed Endpoints ({len(changes['changed_endpoints'])})",
+                "value": changed_list or "No details",
+                "inline": False
+            })
+
+        # New JS endpoints
+        if changes.get('new_js_endpoints'):
+            js_list = "\n".join([f"• {ep}" for ep in changes['new_js_endpoints'][:10]])
+            if len(changes['new_js_endpoints']) > 10:
+                js_list += f"\n... and {len(changes['new_js_endpoints']) - 10} more"
+
+            fields.append({
+                "name": f"📜 New JS Endpoints ({len(changes['new_js_endpoints'])})",
+                "value": js_list,
+                "inline": False
+            })
+
+        embed = {
+            "title": "🔍 Monitoring Alert" if not is_critical else "🚨 CRITICAL ALERT",
+            "description": description,
+            "color": color,
+            "fields": fields,
+            "timestamp": changes.get('timestamp', ''),
+            "footer": {"text": "BB-Monitor Change Detection"}
+        }
+
+        payload = {"embeds": [embed]}
+
+        try:
+            response = requests.post(webhook_url, json=payload, timeout=10)
+            if response.status_code == 204:
+                print("[+] Change notification sent to Discord")
+            else:
+                print(f"[!] Discord change notification failed: {response.status_code}")
+        except Exception as e:
+            print(f"[!] Discord change notification error: {e}")

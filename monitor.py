@@ -532,21 +532,28 @@ class BBMonitor:
 
         return baseline
 
-    def save_baseline(self, domain: str, baseline: Dict[str, Any]):
-        """Save baseline data to file"""
+    def save_baseline(self, domain: str, baseline: Dict[str, Any], send_alert: bool = False):
+        """Save baseline data to file
+
+        Args:
+            domain: Target domain
+            baseline: Baseline data to save
+            send_alert: Whether to send baseline_complete alert (only for initial baseline)
+        """
         baseline_file = Path(self.config['monitoring']['baseline_dir']) / f"{domain}_baseline.json"
         safe_baseline = self._json_safe(baseline)
         with open(baseline_file, 'w') as f:
             json.dump(safe_baseline, f, indent=2)
         print(f"{Colors.GREEN}[+] Baseline saved: {baseline_file}{Colors.RESET}")
 
-        # Send baseline completion alert
-        try:
-            from modules.notifier import Notifier
-            notifier = Notifier(self.config.get('notifications', {}))
-            notifier.send_baseline_alert(domain, baseline)
-        except Exception as e:
-            print(f"{Colors.YELLOW}[!] Baseline alert error: {e}{Colors.RESET}")
+        # Send baseline completion alert only when explicitly requested (--init mode)
+        if send_alert:
+            try:
+                from modules.notifier import Notifier
+                notifier = Notifier(self.config.get('notifications', {}))
+                notifier.send_baseline_alert(domain, baseline)
+            except Exception as e:
+                print(f"{Colors.YELLOW}[!] Baseline alert error: {e}{Colors.RESET}")
 
 
     def load_baseline(self, domain: str) -> Dict[str, Any]:
@@ -876,7 +883,8 @@ class BBMonitor:
 
         for domain in targets:
             baseline = self.collect_baseline(domain)
-            self.save_baseline(domain, baseline)
+            # Send alert for initial baseline
+            self.save_baseline(domain, baseline, send_alert=True)
 
     def run_monitoring(self):
         """Run monitoring and compare with baseline"""
@@ -896,7 +904,8 @@ class BBMonitor:
             if not old_baseline:
                 print(f"{Colors.YELLOW}[!] No baseline found for {domain}, creating initial baseline...{Colors.RESET}")
                 baseline = self.collect_baseline(domain)
-                self.save_baseline(domain, baseline)
+                # Send alert since this is first-time baseline
+                self.save_baseline(domain, baseline, send_alert=True)
                 continue
 
             # Collect new baseline
@@ -909,8 +918,16 @@ class BBMonitor:
             self.print_changes(domain, changes)
             self.save_changes(domain, changes)
 
-            # Update baseline
-            self.save_baseline(domain, new_baseline)
+            # Send change notifications (only for actual changes, not baseline_complete)
+            try:
+                from modules.notifier import Notifier
+                notifier = Notifier(self.config.get('notifications', {}))
+                notifier.notify_changes(domain, changes)
+            except Exception as e:
+                print(f"{Colors.YELLOW}[!] Change notification error: {e}{Colors.RESET}")
+
+            # Update baseline (no alert needed for routine monitoring updates)
+            self.save_baseline(domain, new_baseline, send_alert=False)
 
             all_changes[domain] = changes
 
